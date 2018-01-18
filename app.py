@@ -120,8 +120,6 @@ class MyApp(App):
 		return driverCard
 
 
-
-
 	def gDeployFile(self):
 		takeMeToRoot()
 		f = open("deploy-cluster.conf","w+")
@@ -159,20 +157,25 @@ class MyApp(App):
 		#driverCard = self.findDriveController()
 		driverCard = '9305'
 		chassisSize = self.chassisSizeInput.get_value()
-		f.write("[script1]\n")
+		f.write("[script1:server2]\n")
 		f.write("action=execute\n")
 		f.write("file=/opt/gtools/bin/dmap -c %s -s %s -q\n"%(driverCard, chassisSize))
 		f.write("ignore_script_errors=no\n\n")
+		f.write("[script2:server1]\n")
+		f.write("action=execute\n")
+		f.write("file=/opt/gtools/bin/dmap -c r750 -s 30 -q\n")
+		f.write("ignore_script_errors=no\n\n")
+
 		vDevs = self.vDevSelection.get_value()
 		raidLevel = self.raidSelection.get_value()
 		f.write("[script2]\n")
 		f.write("action=execute\n")
-		f.write("file=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel))
+		f.write("file=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel.lower()))
 		f.write("ignore_script_errors=no\n\n")
 		bricks = self.brickSelection.get_value()
 		f.write("[script3]\n")
 		f.write("action=execute\n")
-		f.write("file=/opt/gtools/bin/mkbrick -n zpool -A -C -b %s -p 95 -fq\n"%(bricks))
+		f.write("file=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
 		f.write("ignore_script_errors=no\n\n")
 		f.write('[update-file1]\n')
 		f.write('action=edit\n')
@@ -192,18 +195,26 @@ class MyApp(App):
 			f.write("force=yes\n")
 			f.write("key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\n")
 			f.write("value=on,50000,600,on,on,600,on,on\n")
-			f.write("brick_dirs=/zpool/vol1/brick,/zpool/vol2/brick,/zpool/vol3/brick,/zpool/vol4/brick, /zpool/vol5/brick, /zpool/vol6/brick, /zpool/vol7/brick, /zpool/vol8/brick\n")
+			f.write("brick_dirs=")
+			for num in range(0, int(bricks)+1):
+				f.write("%s:/zpool/vol%s/brick,"%(hostOneName, str(num)))
+			f.write('\n')
 		if glusterConfig == 'Distributed Replicated':
 			f.write("replica_count=3\n")
 			f.write("arbiter_count=1\n")
 			f.write("force=yes\n")
 			f.write("key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\n")
 			f.write("value=on,50000,600,on,on,600,on,on\n")
-			f.write("brick_dirs=%s"%mkarb)
+			f.write("brick_dirs=")
+			for num in range(0, int(bricks)+1):
+				f.write("%s:/zpool/vol%s/brick,"%(hostOneName, str(num)))
+			f.write('\n')
 		f.close()
 	def createPress(self, widget):
 		self.gDeployFile()
-		subprocess.call(["gdeploy -c deploy-cluster.conf"], shell=True)
+	def runPress(self, widget):
+		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
+
 
 	def main(self):
 		#____________________________________TEMPORARY STUFF_________________________________________________
@@ -260,25 +271,17 @@ class MyApp(App):
 		monitorRightContainer.append(self.driveLabel)
 		monitorRightContainer.append(self.driveMapText)
 		#______________________________________Create container___________________________________________________
-		#--------------------------------------Preconfig----------------------------------------------------------
-		self.preConfigLabel = gui.Label('Pre-configuaration', width='100%', height=30)
-		self.preConfigButton = gui.Button('Run Pre-configuaration (Reboots server)', width='50%', height=40, style={'float':'left'})
-		self.preConfigButton.set_on_click_listener(self.preConfigButtonPress)
-		self.configButton = gui.Button('Finalize Pre-config (Reboots server)', width='50%', height=40, style={'float':'right'})
-		self.configButton.set_on_click_listener(self.configButtonPress)
-		createContainer.append(self.preConfigLabel)
-		createContainer.append(self.preConfigButton)
-		createContainer.append(self.configButton)
 		#-------------------------------------Host Name Input-----------------------------------------------------
-		self.glusterConfigurationLabel = gui.Label('Gluster configuration', width='100%', height=60)
+		self.hostsList=[]
+		self.glusterConfigurationLabel = gui.Label('Gluster configuration', width='100%', height=30)
 		self.hostsLabel = gui.Label('Input host names', width='100%', height=30)
 		self.hostsSlider = gui.Slider(10,0,100,5, width='100%', height=20, margin='10px')
 		self.hostOneInput = gui.TextInput(width='50%', height=30)
-		self.hostOneInput.set_text('Server1')
+		self.hostOneInput.set_text('Input Local Host name here')
 		self.hostOneInput.set_on_change_listener(self.hostOneChange)
 		self.hostTwoInput = gui.TextInput(width='50%', height=30)
 		self.hostTwoInput.set_on_change_listener(self.hostTwoChange)
-		self.hostTwoInput.set_text('Server2')
+		self.hostTwoInput.set_text('Input hosts to be connected')
 		self.addHost = gui.Button('Add another host', width='50%', height=30, style={'float':'left'})
 		self.deleteHost = gui.Button('Delete host', width='50%', height=30, style={'float':'right'})
 		self.addHost.set_on_click_listener(lambda x: createHostContainer.append(gui.TextInput(width='50%', height=30)))
@@ -331,10 +334,21 @@ class MyApp(App):
 		self.glusterSelection.set_on_change_listener(self.glusterSelectionChange)
 		createContainer.append(self.glusterLabel)
 		createContainer.append(self.glusterSelection)
+		#--------------------------------------Advanced Button----------------------------------------------------
+
+
+		self.advancedButton = gui.Button('Show Advanced Options', width='100%', height=30)
+
+		createContainer.append(self.advancedButton)
+
 		#--------------------------------------Create Button------------------------------------------------------
-		self.createButton = gui.Button('Create', width='100%', height=30)
+		self.createButton = gui.Button('Create deploy-cluster.conf', width='50%', height=30, style={'float':'left'})
+		self.runButton = gui.Button("Run 'gdeploy deploy-cluster.conf", width='50%', height=30, style={'float':'right'})
 		self.createButton.set_on_click_listener(self.createPress)
+		self.runButton.set_on_click_listener(self.runPress)
 		createContainer.append(self.createButton)
+		createContainer.append(self.runButton)
+
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
 		mainContainer.append(monitorContainer)
 		mainContainer.append(createContainer)
