@@ -21,7 +21,11 @@ def splitLine(text):
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-GLOBAL VARIABLE DECLARATION#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 global choice
-choice = 'DontStopMeNow'
+choice = 'testvol1'
+global hostCount
+hostCount = 2
+global hosts
+hosts = []
 
  #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# UI RENDERING#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 class MyApp(App):
@@ -35,14 +39,15 @@ class MyApp(App):
 		glusters = s.read().splitlines()
 		return glusters
 	def list_view_on_selected(self, widget, selection):
+		print selection
 		choice = self.volumeList.children[selection].get_text()
-		statusLines = self.statusList()
+		#statusLines = self.statusList()
 		#self.statusTable.append_from_list([('Gluster Process','TCP Port', 'RDMA Port', 'Online', 'Pid'), statusLines[0], statusLines[1]])
-		self.infoTable.append_from_list([(''),(self.infoList()[1]), (self.infoList()[2]), (self.infoList()[3]), (self.infoList()[4]), (self.infoList()[5]), (self.infoList()[6]), (self.infoList()[7])])
-		self.volumeList.empty()
-		volumes = self.retrieveVolumes()
-		for entry in volumes:
-			self.volumeList.append(entry)
+		self.infoTable.append_from_list([(''),(self.infoList(choice)[1]), (self.infoList(choice)[2]), (self.infoList(choice)[3]), (self.infoList(choice)[4]), (self.infoList(choice)[5]), (self.infoList(choice)[6]), (self.infoList(choice)[7])])
+		#self.volumeList.empty()
+		#volumes = self.retrieveVolumes()
+		#for entry in volumes:
+		#	self.volumeList.append(entry)
 		#self.statusTable.append_from_list([('Gluster Process','TCP Port', 'RDMA Port', 'Online', 'Pid'), statusLines[0], statusLines[1]])
 	def startGluster(self, widget):
 		subprocess.call(["gluster volume start %s"%choice], shell=True)
@@ -50,9 +55,21 @@ class MyApp(App):
 	def stopGluster(self, widget):
 		subprocess.call(["echo 'y' | gluster volume stop %s"%(choice)], shell=True)
 		self.notification_message("", "Gluster Volume %s has been stopped"%choice)
+		#self.stopGlusterDialog = gui.GenericDialog("Warning!", "Stopping a gluster will make it's data inaccessible, are you sure you want to continue?")
+		#self.stopGlusterDialog.set_on_cancel_dialog_listener(lambda x: self.notification_message("","Gluster was not stopped"))
+		#self.stopGlusterDialog.set_on_confirm_dialog_listener(self.stopGlusterOnConfirm)
+		#monitorRightContainer.append(self.stopGlusterDialog)
+	def stopGlusterOnConfirm(self, widget):
+		subprocess.call(["echo 'y' | gluster volume stop %s"%(choice)], shell=True)
+		self.notification_message("", "Gluster Volume %s has been stopped"%choice)
+		#self.stopGlusterDialog.hide()
 	def deleteGluster(self, widget):
 		subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
 		self.notification_message("", "Gluster Volume %s has been deleted"%choice)
+		self.volumeList.empty()
+		volumes = self.retrieveVolumes()
+		for entry in volumes:
+			self.volumeList.append(entry)
 	def statusList(self):
 		r=subprocess.Popen(['gluster volume status %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
 		lines = r.read().splitlines()
@@ -78,7 +95,7 @@ class MyApp(App):
 			final.append(tuple1)
 			final.append(tuple2)
 			return final
-	def infoList(self):
+	def infoList(self, choice):
 		r = subprocess.Popen(['gluster volume info %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
 		lines = r.read().splitlines()
 		results = []
@@ -94,15 +111,70 @@ class MyApp(App):
 		takeMeToRoot()
 		r=subprocess.check_output("lsdevpy -n", stderr=subprocess.STDOUT, shell=True)
 		return r
+	def driveMapTable(self):
+		r = subprocess.Popen("lsdevpy -n", stdout=subprocess.PIPE, shell=True).stdout
+		lines = r.read().splitlines()
+
+		lines2 = []
+		for i in range(0,15):
+			lines2.append(lines[i+3])
+		lines3 = ['']
+		for str in lines2:
+			lines3.append(str.split())
+
+		for entry in lines3:
+			tuple(entry)
+		newChar = []
+		lines4 = []
+		for string in lines3:
+			for char in string:
+				if char[0] == "*":
+					if char[1]=="*":
+						char = char.strip("*") + " " + u"\u2713"
+						newChar.append(char)
+						print "#FFFF00"
+					else:
+						char = char.strip("*") + " " + u"\u20DD"
+						newChar.append(char)
+						print "#008000"
+				else:
+					print "#FFFFFF"
+		lines4 =['']
+		for str2 in newChar:
+			lines4.append(str2.split())
+		for entry in lines4:
+			tuple(entry)
+		return lines4
+
 	def refresh(self, widget):
 		#self.statusList()
 		self.volumeList.empty()
-		volumes = retrieveVolumes()
+		volumes = self.retrieveVolumes()
 		for entry in volumes:
 			self.volumeList.append(entry)
-		self.infoTable.append_from_list([(''),(self.infoList[1]), (self.infoList[2]), (self.infoList[3]), (self.infoList[4]), (self.infoList[5]), (self.infoList[6]), (self.infoList[7])])
-		self.notification_message("", "Page refreshed")
+		self.infoTable.append_from_list([(''),(self.infoList(choice)[1]), (self.infoList(choice)[2]), (self.infoList(choice)[3]), (self.infoList(choice)[4]), (self.infoList(choice)[5]), (self.infoList(choice)[6]), (self.infoList(choice)[7])])
+
 	#--------------------------------------------Create Functions---------------------------------------------------
+	def passwordlessSSH(self):
+		subprocess.call(['cd ~'], shell=True)
+		subprocess.call(['cd etc'], shell=True)
+
+
+	def addHostPress(self, widget):
+		global hostCount
+		hostCount = hostCount + 1
+		hostInputs = []
+		hostInputs[hostCount] =  gui.TextInput(width='50%', height=30)
+		createHostContainer.append(hostInputs[hostCount])
+	def numHostsChange(self, widget, newValue):
+		global numHosts
+		numHosts = self.hostsSpinBox.get_value()
+		print numHosts
+		for num in numHosts:
+			hostTextInput = gui.TextInput(width='50%', height=30)
+			hostTextInput.set_text('Input host name')
+			createHostContainer.append(hostTextInput)
+
 	def gDeployFile(self):
 		takeMeToRoot()
 		f = open("deploy-cluster.conf","w+")
@@ -137,15 +209,14 @@ class MyApp(App):
 		f.write("action=start\n")
 		f.write("service=glusterd\n")
 		f.write("ignore_errors=no\n\n")
-		driverCard = '9305'
 		chassisSize = self.chassisSizeInput.get_value()
-		f.write("[script1:server2]\n")
+		f.write("[script1:%s]\n"%hostOneName)
 		f.write("action=execute\n")
-		f.write("file=/opt/gtools/bin/dmap -c %s -s %s -q\n"%(driverCard, chassisSize))
+		f.write("file=/opt/gtools/bin/dmap -q -c 9305 -s %s\n"%(chassisSize))
 		f.write("ignore_script_errors=no\n\n")
-		f.write("[script2:server1]\n")
+		f.write("[script2:%s]\n"%hostTwoName)
 		f.write("action=execute\n")
-		f.write("file=/opt/gtools/bin/dmap -c r750 -s 30 -q\n")
+		f.write("file=/opt/gtools/bin/dmap -q -c r750 -s %s\n"%(chassisSize))
 		f.write("ignore_script_errors=no\n\n")
 		vDevs = self.vDevSelection.get_value()
 		raidLevel = self.raidSelection.get_value()
@@ -192,6 +263,7 @@ class MyApp(App):
 			f.write('\n')
 		f.close()
 	def createPress(self, widget):
+		self.notification_message("Action", "Your gluster is in the oven ")
 		entries = self.retrieveVolumes()
 		entryCount = 0
 		for entry in entries:
@@ -200,6 +272,10 @@ class MyApp(App):
 		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
 		newEntries = self.retrieveVolumes()
 		newEntryCount = 0
+		self.volumeList.empty()
+		volumes = self.retrieveVolumes()
+		for entry in volumes:
+			self.volumeList.append(entry)
 		for newEntry in newEntries:
 			newEntryCount = newEntryCount + 1
 		if entryCount == newEntryCount:
@@ -207,20 +283,33 @@ class MyApp(App):
 		else:
 			currentVolumeList = newEntries
 			self.notification_message("Success!", "Gluster %s has been made"%(self.nameInput.get_text()))
-
+	def showAdvanced(self, widget, value):
+		print value
+		advancedContainer = gui.Widget(width='100%', height=200)
+		image = gui.InputDialog("Success", "Success", "Success")
+		advancedContainer.append(image)
+		if value == 'false':
+			print 'false'
+		if value == 'true':
+			print True
+			createContainer.append(advancedContainer)
 	def main(self):
 		#____________________________________TEMPORARY STUFF_________________________________________________
 		global currentVolumeList
 		currentVolumeList = self.retrieveVolumes()
 		choice = str(self.retrieveVolumes()[0])
 		statusLines = self.statusList()
-		infoLists = self.infoList()
+		infoLists = self.infoList(choice)
 		#____________________________________CONTAINERS_________________________________________________________
 		mainContainer = gui.Widget(width='95%', margin='0px auto', height='100%', style={'display':'block','overflow':'auto'})
+		mainContainer.set_on_click_listener(self.refresh)
 		monitorContainer = gui.Widget(width='60%', height='100%', style={'float':'left','display': 'block', 'overflow':'auto'})
 		monitorLeftContainer = gui.Widget(width='50%', height='100%', style={'float':'left','display':'block','overflow':'auto'})
+		global monitorRightContainer
 		monitorRightContainer = gui.Widget(width='50%', height='100%', style={'float':'right','display':'block', 'overflow':'auto'})
+		global createContainer
 		createContainer = gui.Widget(width='40%', height='100%', style={'float':'right', 'display':'block', 'overflow':'auto'})
+		global createHostContainer
 		createHostContainer = gui.Widget(width='100%', height= 200, style={'overflow':'auto'})
 		#_____________________________________MENUBAR____________________________________________________________
 		menu = gui.Menu(width='100%', height='60px')
@@ -255,16 +344,18 @@ class MyApp(App):
 
 		#-------------------------------------VOLUME INFO--------------------------------------------------------
 		self.infoLabel = gui.Label('Volume Info', width='100%', height=30)
-		self.infoTable = gui.Table.new_from_list([(''), (self.infoList()[1]), (self.infoList()[2]), (self.infoList()[3]),  (self.infoList()[4]),  (self.infoList()[5]),  (self.infoList()[6]),  (self.infoList()[7])],width='100%', height= 400)
+		self.infoTable = gui.Table.new_from_list([(''), (self.infoList(choice)[1]), (self.infoList(choice)[2]), (self.infoList(choice)[3]),  (self.infoList(choice)[4]),  (self.infoList(choice)[5]),  (self.infoList(choice)[6]),  (self.infoList(choice)[7])],width='100%', height= 400)
 		monitorLeftContainer.append(self.infoLabel)
 		monitorLeftContainer.append(self.infoTable)
 
 		#-----------------------------------DRIVE MAP-------------------------------------------------------------
-		self.driveLabel = gui.Label('Drive Map', width='100%', height=30)
+		self.driveLabel = gui.Label('Drive Status', width='100%', height=30)
 		self.driveMapText = gui.TextInput(height=350, width='100%')#, style={'border': '1px solid black'})
 		self.driveMapText.set_text(self.driveMap())
+		self.driveTable = gui.Table.new_from_list(self.driveMapTable(), width='100%', height=100)
 		monitorRightContainer.append(self.driveLabel)
-		monitorRightContainer.append(self.driveMapText)
+		#monitorRightContainer.append(self.driveMapText)
+		monitorRightContainer.append(self.driveTable)
 		#-----------------------------------Delete / stop --------------------------------------------------------
 		self.startButton = gui.Button('Start Selected Gluster', width='100%', height=30)
 		self.startButton.set_on_click_listener(self.startGluster)
@@ -283,22 +374,24 @@ class MyApp(App):
 		#-------------------------------------Host Name Input-----------------------------------------------------
 		self.hostsList=[]
 		self.glusterConfigurationLabel = gui.Label('Gluster configuration', width='100%', height=30)
-		self.hostsLabel = gui.Label('Input host names', width='100%', height=30)
+		self.hostsPromptLabel = gui.Label('How many hosts are you connecting?', width='50%', height=30, style={'float':'left'})
+		self.hostsSpinBox = gui.SpinBox(2,2,10,1, width='50%', height=30, style={'float':'right'})
+		self.hostsSpinBox.set_on_change_listener(self.numHostsChange)
+		print self.hostsSpinBox.get_value()
 		self.hostsSlider = gui.Slider(10,0,100,5, width='100%', height=20, margin='10px')
 		self.hostOneInput = gui.TextInput(width='50%', height=30)
 		self.hostOneInput.set_text('Input Local Host name here')
 		self.hostTwoInput = gui.TextInput(width='50%', height=30)
 		self.hostTwoInput.set_text('Input hosts to be connected')
-		self.addHost = gui.Button('Add another host', width='50%', height=30, style={'float':'left'})
-		self.deleteHost = gui.Button('Delete host', width='50%', height=30, style={'float':'right'})
-		self.addHost.set_on_click_listener(lambda x: createHostContainer.append(gui.TextInput(width='50%', height=30)))
+		hosts.append(self.hostOneInput.get_text())
+		hosts.append(self.hostTwoInput.get_text())
+		#self.addHost.set_on_click_listener(lambda x: createHostContainer.append(gui.TextInput(width='50%', height=30)))
 		createContainer.append(self.glusterConfigurationLabel)
-		createContainer.append(self.hostsLabel)
+		createContainer.append(self.hostsPromptLabel)
+		createContainer.append(self.hostsSpinBox)
 		createContainer.append(createHostContainer)
 		createHostContainer.append(self.hostOneInput)
 		createHostContainer.append(self.hostTwoInput)
-		createContainer.append(self.addHost)
-		createContainer.append(self.deleteHost)
 		#--------------------------------------Gluster Name-------------------------------------------------------
 		self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
 		self.nameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
@@ -313,7 +406,7 @@ class MyApp(App):
 		createContainer.append(self.chassisSizeInput)
 		#--------------------------------------RAIDZ configuration------------------------------------------------
 		self.raidLabel = gui.Label('Select RAID Level (Z2 recommended)', width='70%', height=30, style={'float':'left'})
-		self.raidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3 (???)'), width='30%', height=30, style={'float':'right'})
+		self.raidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3'), width='30%', height=30, style={'float':'right'})
 		self.raidSelection.select_by_value('RAIDZ2')
 		createContainer.append(self.raidLabel)
 		createContainer.append(self.raidSelection)
@@ -336,8 +429,9 @@ class MyApp(App):
 		createContainer.append(self.glusterLabel)
 		createContainer.append(self.glusterSelection)
 		#--------------------------------------Advanced Button----------------------------------------------------
-		self.advancedButton = gui.Button('Show Advanced Options', width='100%', height=30)
-		createContainer.append(self.advancedButton)
+		self.advancedCheckBoxLabel = gui.CheckBoxLabel('Show advanced options')
+		self.advancedCheckBoxLabel.set_on_change_listener(self.showAdvanced)
+		createContainer.append(self.advancedCheckBoxLabel)
 		#--------------------------------------Create Button------------------------------------------------------
 		self.createButton = gui.Button('Create new gluster', width='100%', height=30, style={'float':'left'})
 		self.createButton.set_on_click_listener(self.createPress)
