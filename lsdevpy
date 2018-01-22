@@ -122,7 +122,7 @@ case $BAYS in
 		else
 			setBAYstatus $i_
 		fi
-		printf "| %s |\n" "${BAYSTATUS[$i_]}" #displays drives in a snake pattern 
+		printf "%s\n" "${BAYSTATUS[$i_]}" #displays drives in a snake pattern 
 		let i=i+1
 		let j=j+1
 	done
@@ -142,7 +142,7 @@ case $BAYS in
 			setBAYstatus $i_
 			setBAYstatus $j
 		fi
-		printf "| %s | %s |\n" "${BAYSTATUS[$i_]}" "${BAYSTATUS[$j]}" #displays drives in a snake pattern 
+		printf "%s|%s\n" "${BAYSTATUS[$i_]}" "${BAYSTATUS[$j]}" #displays drives in a snake pattern 
 		let i=i+1
 		let j=j+1
 	done
