@@ -21,7 +21,7 @@ def splitLine(text):
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-GLOBAL VARIABLE DECLARATION#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 global choice
-choice = 'testvol1'
+choice = 'DontStopMeNow'
 global hostCount
 hostCount = 2
 global hosts
@@ -40,6 +40,7 @@ class MyApp(App):
 		return glusters
 	def list_view_on_selected(self, widget, selection):
 		print selection
+		global choice
 		choice = self.volumeList.children[selection].get_text()
 		#statusLines = self.statusList()
 		#self.statusTable.append_from_list([('Gluster Process','TCP Port', 'RDMA Port', 'Online', 'Pid'), statusLines[0], statusLines[1]])
@@ -49,6 +50,15 @@ class MyApp(App):
 		#for entry in volumes:
 		#	self.volumeList.append(entry)
 		#self.statusTable.append_from_list([('Gluster Process','TCP Port', 'RDMA Port', 'Online', 'Pid'), statusLines[0], statusLines[1]])
+	def brickStatus(self, widget, selection):
+		brick = self.driveList.children[selection].get_text()
+		s=subprocess.Popen(["hdparm -I /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
+		lines = s.read().splitlines()
+		modelNumber = lines[4]
+		message = modelNumber + "in use"
+		self.notification_message("Brick Info", message)
+
+
 	def startGluster(self, widget):
 		subprocess.call(["gluster volume start %s"%choice], shell=True)
 		self.notification_message("", "Gluster Volume %s has been started"%choice)
@@ -130,16 +140,17 @@ class MyApp(App):
 			for char in string:
 				if char[0] == "*":
 					if char[1]=="*":
-						char = char.strip("*") + " " + u"\u2713"
+						#char = char.strip("*")# + " " + u"\u2713"
 						newChar.append(char)
-						print "#FFFF00"
+						#print "#FFFF00"
 					else:
-						char = char.strip("*") + " " + u"\u20DD"
+						#char = char.strip("*")# + " " + u"\u20DD"
 						newChar.append(char)
-						print "#008000"
+						#print "#008000"
 				else:
-					print "#FFFFFF"
-		lines4 =['']
+					idk = 1
+					#print "#FFFFFF"
+		lines4 =['Drive Alias']
 		for str2 in newChar:
 			lines4.append(str2.split())
 		for entry in lines4:
@@ -169,12 +180,15 @@ class MyApp(App):
 	def numHostsChange(self, widget, newValue):
 		global numHosts
 		numHosts = self.hostsSpinBox.get_value()
-		print numHosts
 		for num in numHosts:
 			hostTextInput = gui.TextInput(width='50%', height=30)
 			hostTextInput.set_text('Input host name')
-			createHostContainer.append(hostTextInput)
-
+			createHostContainer.append(hostTextInput, numHosts)
+		for num in numHosts:
+			createHostContainer
+	def raidLevelSelected(self, widget, selection):
+		#level = self.raidSelection.children[selection].get_text()
+		print selection
 	def gDeployFile(self):
 		takeMeToRoot()
 		f = open("deploy-cluster.conf","w+")
@@ -262,8 +276,36 @@ class MyApp(App):
 				f.write("%s:/zpool/vol%s/brick,"%(hostOneName, str(num)))
 			f.write('\n')
 		f.close()
+	def showAdvanced(self, widget):
+		advancedContainer = gui.Widget(width='100%', height=200)
+		self.ashiftLabel = gui.Label('ashift value:', width='50%', height=30, style={'float':'left'})
+		self.ashiftInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+		self.ashiftInput.set_text('9')
+		self.paddingLabel = gui.Label('Padding (%)', width='50%', height=30, style={'float':'left'})
+		self.paddingInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+		self.paddingInput.set_text("95")
+		self.arbiterLabel = gui.Label('Arbiter Bricks (?)', width='50%', height=30, style={'float':'left'})
+		self.arbiterInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+		self.arbiterInput.set_text("100G")
+		advancedContainer.append(self.ashiftLabel)
+		advancedContainer.append(self.ashiftInput)
+		advancedContainer.append(self.paddingLabel)
+		advancedContainer.append(self.paddingInput)
+		advancedContainer.append(self.arbiterLabel)
+		advancedContainer.append(self.arbiterInput)
+		createContainer.append(advancedContainer)
+	def reset(self, widget):
+		self.hostOneInput.set_text('Localhost')
+		self.hostTwoInput.set_text('server1')
+		self.nameInput.set_text('NewVolume')
+		self.chassisSizeInput.select_by_value('30')
+		self.raidSelection.select_by_value('RAIDZ2')
+		self.vDevSelection.select_by_value('3')
+		self.brickSelection.select_by_value('8')
+		self.glusterSelection.select_by_value('Distributed')
+
 	def createPress(self, widget):
-		self.notification_message("Action", "Your gluster is in the oven ")
+		self.notification_message("Action", "%s is in the oven "%self.nameInput.get_text())
 		entries = self.retrieveVolumes()
 		entryCount = 0
 		for entry in entries:
@@ -279,20 +321,11 @@ class MyApp(App):
 		for newEntry in newEntries:
 			newEntryCount = newEntryCount + 1
 		if entryCount == newEntryCount:
-			self.notification_message("Error!", "Don't know what happened but your gluster didn't work")
+			self.notification_message("Error!", "Don't know what happened but %s couldn't be made"%self.nameInput.get_text())
 		else:
 			currentVolumeList = newEntries
 			self.notification_message("Success!", "Gluster %s has been made"%(self.nameInput.get_text()))
-	def showAdvanced(self, widget, value):
-		print value
-		advancedContainer = gui.Widget(width='100%', height=200)
-		image = gui.InputDialog("Success", "Success", "Success")
-		advancedContainer.append(image)
-		if value == 'false':
-			print 'false'
-		if value == 'true':
-			print True
-			createContainer.append(advancedContainer)
+
 	def main(self):
 		#____________________________________TEMPORARY STUFF_________________________________________________
 		global currentVolumeList
@@ -302,7 +335,6 @@ class MyApp(App):
 		infoLists = self.infoList(choice)
 		#____________________________________CONTAINERS_________________________________________________________
 		mainContainer = gui.Widget(width='95%', margin='0px auto', height='100%', style={'display':'block','overflow':'auto'})
-		mainContainer.set_on_click_listener(self.refresh)
 		monitorContainer = gui.Widget(width='60%', height='100%', style={'float':'left','display': 'block', 'overflow':'auto'})
 		monitorLeftContainer = gui.Widget(width='50%', height='100%', style={'float':'left','display':'block','overflow':'auto'})
 		global monitorRightContainer
@@ -350,12 +382,32 @@ class MyApp(App):
 
 		#-----------------------------------DRIVE MAP-------------------------------------------------------------
 		self.driveLabel = gui.Label('Drive Status', width='100%', height=30)
-		self.driveMapText = gui.TextInput(height=350, width='100%')#, style={'border': '1px solid black'})
-		self.driveMapText.set_text(self.driveMap())
-		self.driveTable = gui.Table.new_from_list(self.driveMapTable(), width='100%', height=100)
-		monitorRightContainer.append(self.driveLabel)
-		#monitorRightContainer.append(self.driveMapText)
-		monitorRightContainer.append(self.driveTable)
+		self.driveList = gui.ListView()
+		drive_List = self.driveMapTable()
+		for entry in drive_List:
+			driveAlias = str(entry)
+			driveAlias = driveAlias.strip("*")
+			driveAlias = driveAlias.strip("['")
+			driveAlias = driveAlias.strip("']")
+			char = str(driveAlias)
+			if char[0] == "*":
+				if char[1] == "*":
+					driveAlias = driveAlias.strip("*")
+					self.drive = gui.ListItem(driveAlias, style={'color':'#29B809'})
+				else:
+					driveAlias = driveAlias.strip("*")
+					self.drive = gui.ListItem(driveAlias, style={'color':'#FF6100'})
+			else:
+				self.drive = gui.ListItem(driveAlias)
+				
+
+			self.driveList.append(self.drive)
+			self.driveList.set_on_selection_listener(self.brickStatus)
+		monitorRightContainer.append(self.driveLabel)		
+		monitorRightContainer.append(self.driveList)
+
+
+
 		#-----------------------------------Delete / stop --------------------------------------------------------
 		self.startButton = gui.Button('Start Selected Gluster', width='100%', height=30)
 		self.startButton.set_on_click_listener(self.startGluster)
@@ -374,21 +426,21 @@ class MyApp(App):
 		#-------------------------------------Host Name Input-----------------------------------------------------
 		self.hostsList=[]
 		self.glusterConfigurationLabel = gui.Label('Gluster configuration', width='100%', height=30)
-		self.hostsPromptLabel = gui.Label('How many hosts are you connecting?', width='50%', height=30, style={'float':'left'})
-		self.hostsSpinBox = gui.SpinBox(2,2,10,1, width='50%', height=30, style={'float':'right'})
-		self.hostsSpinBox.set_on_change_listener(self.numHostsChange)
-		print self.hostsSpinBox.get_value()
+		#self.hostsPromptLabel = gui.Label('How many hosts are you connecting?', width='50%', height=30, style={'float':'left'})
+		#self.hostsSpinBox = gui.SpinBox(2,2,10,1, width='50%', height=30, style={'float':'right'})
+		#self.hostsSpinBox.set_on_change_listener(self.numHostsChange)
+		#print self.hostsSpinBox.get_value()
 		self.hostsSlider = gui.Slider(10,0,100,5, width='100%', height=20, margin='10px')
 		self.hostOneInput = gui.TextInput(width='50%', height=30)
-		self.hostOneInput.set_text('Input Local Host name here')
+		self.hostOneInput.set_text('Localhost')
 		self.hostTwoInput = gui.TextInput(width='50%', height=30)
-		self.hostTwoInput.set_text('Input hosts to be connected')
+		self.hostTwoInput.set_text('server1')
 		hosts.append(self.hostOneInput.get_text())
 		hosts.append(self.hostTwoInput.get_text())
 		#self.addHost.set_on_click_listener(lambda x: createHostContainer.append(gui.TextInput(width='50%', height=30)))
 		createContainer.append(self.glusterConfigurationLabel)
-		createContainer.append(self.hostsPromptLabel)
-		createContainer.append(self.hostsSpinBox)
+		#createContainer.append(self.hostsPromptLabel)
+		#createContainer.append(self.hostsSpinBox)
 		createContainer.append(createHostContainer)
 		createHostContainer.append(self.hostOneInput)
 		createHostContainer.append(self.hostTwoInput)
@@ -408,6 +460,7 @@ class MyApp(App):
 		self.raidLabel = gui.Label('Select RAID Level (Z2 recommended)', width='70%', height=30, style={'float':'left'})
 		self.raidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3'), width='30%', height=30, style={'float':'right'})
 		self.raidSelection.select_by_value('RAIDZ2')
+		self.raidSelection.set_on_change_listener(self.raidLevelSelected)
 		createContainer.append(self.raidLabel)
 		createContainer.append(self.raidSelection)
 		#--------------------------------------VDev configuration-------------------------------------------------
@@ -429,9 +482,13 @@ class MyApp(App):
 		createContainer.append(self.glusterLabel)
 		createContainer.append(self.glusterSelection)
 		#--------------------------------------Advanced Button----------------------------------------------------
-		self.advancedCheckBoxLabel = gui.CheckBoxLabel('Show advanced options')
-		self.advancedCheckBoxLabel.set_on_change_listener(self.showAdvanced)
-		createContainer.append(self.advancedCheckBoxLabel)
+		self.advancedCheckButton = gui.Button('Show advanced options', width='100%', height=30, style={'float':'left'})
+		self.advancedCheckButton.set_on_click_listener(self.showAdvanced)
+		createContainer.append(self.advancedCheckButton)
+		#--------------------------------------Reset Button-------------------------------------------------------
+		self.resetButton = gui.Button('Reset to defaults', width='100%', height=30)
+		self.resetButton.set_on_click_listener(self.reset)
+		createContainer.append(self.resetButton)
 		#--------------------------------------Create Button------------------------------------------------------
 		self.createButton = gui.Button('Create new gluster', width='100%', height=30, style={'float':'left'})
 		self.createButton.set_on_click_listener(self.createPress)
@@ -441,5 +498,11 @@ class MyApp(App):
 		mainContainer.append(monitorContainer)
 		mainContainer.append(createContainer)
 		return mainContainer
+
+
+
+	
+
+
 
 start(MyApp)
