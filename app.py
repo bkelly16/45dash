@@ -1,41 +1,19 @@
-import remi.gui as gui
+subprocess.call(['cd ~'], shell=True)import remi.gui as gui
 from remi import start, App
 import sys, tempfile, os
 import subprocess
 import re
 import platform, socket
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-GLOBAL FUNCTION DECLARATIONS#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-
-def takeMeToRoot():
-	subprocess.call(['cd ../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../..'], shell=True)
-
-
-def splitLine(text):
-	words = text.split()
-	words[0] = words[0]+words[1]
-	del words[1]
-	wordList = []
-	for word in words:
-		wordList.append(word)
-	return wordList
-
-
-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-GLOBAL VARIABLE DECLARATION#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-
-global hostCount
-hostCount = 2
-global hosts
-hosts = []
 
  #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# UI RENDERING#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 class MyApp(App):
 
-	 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# LOCAL FUNCTIONS #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# 
+	 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# LOCAL FUNCTIONS #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 	def __init__(self, *args):
 		super(MyApp, self).__init__(*args)
 	#--------------------------------------------Monitor Functions-------------------------------------------------
 	def retrieveVolumes(self):
-		takeMeToRoot()
+		subprocess.call(['cd ~'], shell=True)
 		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
 		glusters = s.read().splitlines()
 		return glusters
@@ -47,12 +25,10 @@ class MyApp(App):
 		modelNumber = lines[4]
 		message = modelNumber + "in use"
 		self.notification_message("Brick Info", message)
-
-	
 		self.autoRefresh()
-	
+
 	def driveMap(self):
-		takeMeToRoot()
+		subprocess.call(['cd ~'], shell=True)
 		r=subprocess.check_output("lsdevpy -n", stderr=subprocess.STDOUT, shell=True)
 		return r
 	def driveMapTable(self):
@@ -98,14 +74,11 @@ class MyApp(App):
 			bricks.append(str("Brick "+str(num)+": "+lines[lineParse].strip(" ")+"|"+lines[lineParse+1].strip(" ")))
 			lineParse = lineParse+2
 		return bricks
-					#print lineCount/2
-		#print lines
 
 	def autoRefresh(self):
 		global choice
 		if choice == '':
 			choice = self.retrieveVolumes()[0]
-		#self.statusTable.append_from_list([('Gluster Process','TCP Port', 'RDMA Port', 'Online', 'Pid'), self.statusList()[0], self.statusList()[1]], True)
 		self.detailList.empty()
 		details = self.detailText()
 		for entry in details:
@@ -120,84 +93,10 @@ class MyApp(App):
 			elif status == "stopped":
 				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
 			self.volumeList.append(volume)
-		#self.infoTable.append_from_list([(''),(self.infoTableFunction(choice)[1]), (self.infoList(choice)[2]), (self.infoList(choice)[3]), (self.infoList(choice)[4]), (self.infoList(choice)[5]), (self.infoList(choice)[6]), (self.infoList(choice)[7])])
-
-	def refresh(self, widget):
-		#self.statusList()
-		self.statusTable.append_from_list([('Gluster Process','TCP Port', 'RDMA Port', 'Online', 'Pid'), statusList(choice)[0], statusList(choice)[1]])
-		self.volumeList.empty()
-		volume_List = self.retrieveVolumes()
-		self.detailList.empty()
-		details = self.detailText()
-		for entry in details:
-			self.brick = gui.ListItem(entry)
-			self.detailList.append(self.brick)
-		for volume in volume_List:
-			statusLine = self.infoList(volume)[4]
-			status = statusLine[1]
-			status = status.strip(" ")
-			status = status.lower()
-			if status == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif status == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.volumeList.append(self.volume)
-		#self.infoTable.append_from_list([(''),(self.infoList(choice)[1]), (self.infoList(choice)[2]), (self.infoList(choice)[3]), (self.infoList(choice)[4]), (self.infoList(choice)[5]), (self.infoList(choice)[6]), (self.infoList(choice)[7])])
 
 	#--------------------------------------------Create Functions---------------------------------------------------
-	def passwordlessSSH(self):
-		subprocess.call(['cd ~'], shell=True)
-		subprocess.call(['cd etc'], shell=True)
 
 
-	def addHostPress(self, widget):
-		global hostCount
-		hostCount = hostCount + 1
-		hostInputs = []
-		hostInputs[hostCount] =  gui.TextInput(width='50%', height=30)
-		createHostContainer.append(hostInputs[hostCount])
-	def numHostsChange(self, widget, newValue):
-		global numHosts
-		numHosts = self.hostsSpinBox.get_value()
-		for num in numHosts:
-			hostTextInput = gui.TextInput(width='50%', height=30)
-			hostTextInput.set_text('Input host name')
-			createHostContainer.append(hostTextInput, numHosts)
-		for num in numHosts:
-			createHostContainer
-	def raidLevelSelected(self, widget, selection):
-		#level = self.raidSelection.children[selection].get_text()
-		inte = 1
-	def gDeployFile(self):
-		takeMeToRoot()
-		f = open("deploy-cluster.conf","w+")
-		f.write(hostsConf)
-		f.write("\n[tune-profile]\nthroughput-performance\n\n[service1]\naction=enable\nservice=ntpd\nignore_errors=no\n\n[service2]\naction=start\nservice=ntpd\nignore_errors=no\n\n[service3]\naction=disable\nservice=firewalld\nignore_errors=no\n\n[service4]\naction=stop\nservice=firewalld\nignore_errors=no\n\n[service5]\naction=enable\nservice=glusterd\nignore_errors=no\n\n[service6]\naction=start\nglusterd\nignore_errors=no\n\n")
-		#chassisSize = self.chassisSizeInput.get_value()
-		f.write("[script1]\n")
-		f.write("action=execute\nfile=/opt/gtools/bin/dmap -qs 60\n")
-		f.write("ignore_script_errors=no\n\n")
-		vDevs = self.vDevSelection.get_value()
-		raidLevel = self.raidSelection.get_value()
-		f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel.lower()))
-		f.write("ignore_script_errors=no\n\n")
-		bricks = self.brickSelection.get_value()
-		f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
-		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
-		glusterConfig = self.glusterSelection.get_value()
-		glusterName = self.nameInput.get_text()
-		r = subprocess.Popen(['/opt/gtools/bin/mkarb -b %s -n %s -n %s'%(bricks, "server2", "server1")], shell=True, stdout=subprocess.PIPE).stdout
-		mkarb = r.read()
-		tuneProfile = self.tuningSelection.get_value()
-		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
-		if glusterConfig == 'Distributed':
-			f.write("replica_count=0\nforce=yes\n")
-			if tuneProfile == 'Default':
-				key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
-		
-		if glusterConfig == 'Distributed Replicated':
-			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
-		f.close()
 	def showAdvanced(self, widget):
 		advancedContainer = gui.Widget(width='100%', height=200)
 		self.ashiftLabel = gui.Label('ashift value:', width='50%', height=30, style={'float':'left'})
@@ -267,7 +166,7 @@ class MyApp(App):
 		monitorRightContainer = gui.Widget(width='45%', height='100%', style={'float':'right','display':'block', 'overflow':'auto'})
 		createHostContainer = gui.Widget()
 		createContainer = gui.Widget()
-		#____________________________________LOCAL VARIABLES_____________________________________________________
+
 		#-----------------------------------DRIVE MAP-------------------------------------------------------------
 		self.driveLabel = gui.Label('Drive Status', width='100%', height=30)
 		self.driveList = gui.ListView()
@@ -287,11 +186,11 @@ class MyApp(App):
 					self.drive = gui.ListItem(driveAlias, style={'color':'#FF6100'})
 			else:
 				self.drive = gui.ListItem(driveAlias)
-				
+
 
 			self.driveList.append(self.drive)
 			self.driveList.set_on_selection_listener(self.brickStatus)
-		monitorRightContainer.append(self.driveLabel)		
+		monitorRightContainer.append(self.driveLabel)
 		monitorRightContainer.append(self.driveList)
 
 		#-----------------------------------Detail List --------------------------------------------------------
@@ -311,7 +210,7 @@ class MyApp(App):
 		self.mainMenuVolumeContainer = gui.Widget(width='20%', height='100%', style={'float':'left','display':'block','overflow':'auto'})
 		self.activeVolumeLabel = gui.Label('Active Volumes', width='100%', height='10%')
 		self.activeVolumeList = gui.ListView(width='100%', height='90%', style={'float':'left'})
-		self.active_Volume_List = self.retrieveVolumes() 
+		self.active_Volume_List = self.retrieveVolumes()
 		for vol in self.active_Volume_List:
 			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
 			if volumeStatus =='started':
@@ -334,10 +233,8 @@ class MyApp(App):
 		self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
 		for number in range(2,25):
 			self.hostsInputDropDown.append(str(number))
-		self.hostsInputDropDown.select_by_value("")
+		self.hostsInputDropDown.select_by_value("0")
 		self.hostsInputDropDown.set_on_change_listener(self.hostsInputDropDownFunction)
-		self.testButton = gui.Button('Save Hosts', width='98%')
-		self.testButton.set_on_click_listener(self.saveHosts)
 		createHostsContainer.append(self.hostsLabel)
 		createHostsContainer.append(self.hostsInputLabel)
 		createHostsContainer.append(self.hostsInputDropDown)
@@ -350,7 +247,6 @@ class MyApp(App):
 		self.raidLabel = gui.Label('Select RAID Level (Z2 recommended)', width='70%', height=30, style={'float':'left'})
 		self.raidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3'), width='30%', height=30, style={'float':'right'})
 		self.raidSelection.select_by_value('RAIDZ2')
-		self.raidSelection.set_on_change_listener(self.raidLevelSelected)
 		self.vDevLabel = gui.Label('Select # of VDevs', width='70%', height=30, style={'float':'left'})
 		self.vDevSelection = gui.DropDown.new_from_list(('2','3','4','5','6'), width='30%', height=30, style={'float':'right'})
 		self.vDevSelection.select_by_value('3')
@@ -450,24 +346,24 @@ class MyApp(App):
 		#--------------------------------------Front end configuation---------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Appending containers-----------------------------------------------
-		monitorContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#851919','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		mainCreateContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#851919','margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorVolumeContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#851919','margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#851919','margin':'0px auto','display': 'block', 'overflow':'auto'})
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		#--------------------------------------Create menu--------------------------------------------------------
-		mainCreateContainer.append(createHostsContainer)
+		createContainer.append(createHostsContainer)
 		global hostsInputContainer
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
-		mainCreateContainer.append(self.glusterDetailsContainer)
+		createContainer.append(self.glusterDetailsContainer)
 		#--------------------------------------Monitor Menu-------------------------------------------------------
-		monitorContainer.append(self.monitorVolumeContainer)
-		monitorContainer.append(self.monitorInfoContainer)
-		monitorContainer.append(self.monitorStatusContainer)
+		monitorVolumeContainer.append(self.monitorVolumeContainer)
+		monitorVolumeContainer.append(self.monitorInfoContainer)
+		monitorVolumeContainer.append(self.monitorStatusContainer)
 		#--------------------------------------TabBox configuation------------------------------------------------
 		self.mainTabBox = gui.TabBox()
 		self.mainTabBox.add_tab(mainMenuContainer, "Main Menu", None)
-		self.mainTabBox.add_tab(mainCreateContainer, "Create", None)
-		self.mainTabBox.add_tab(monitorContainer, "Monitor - Volume", None)
+		self.mainTabBox.add_tab(createContainer, "Create", None)
+		self.mainTabBox.add_tab(monitorVolumeContainer, "Monitor - Volume", None)
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
 		mainContainer.append(self.mainTabBox)
 		return mainContainer
@@ -484,7 +380,6 @@ class MyApp(App):
 		hostsConf = "[hosts]\n"
 		for entry in hosts:
 			hostsConf = hostsConf + "%s\n"%entry
-		hostsConf + "\n"
 		print hostsConf
 	def hostsInputDropDownFunction(self, widget, selection):
 		global hostsList
@@ -502,12 +397,58 @@ class MyApp(App):
 			hostsInputContainer.append(self.hostInput, num)
 		createHostsContainer.append(hostsInputContainer)
 
+	def gDeployFile(self):
+		subprocess.call(['cd ~'], shell=True)
+		f = open("deploy-cluster.conf","w+")
+		f.write(hostsConf)
+		f.write("\n[tune-profile]\nthroughput-performance\n\n[service1]\naction=enable\nservice=ntpd\nignore_errors=no\n\n[service2]\naction=start\nservice=ntpd\nignore_errors=no\n\n[service3]\naction=disable\nservice=firewalld\nignore_errors=no\n\n[service4]\naction=stop\nservice=firewalld\nignore_errors=no\n\n[service5]\naction=enable\nservice=glusterd\nignore_errors=no\n\n[service6]\naction=start\nglusterd\nignore_errors=no\n\n")
+		#chassisSize = self.chassisSizeInput.get_value()
+		f.write("[script1]\n")
+		f.write("action=execute\nfile=/opt/gtools/bin/dmap -qs 60\n")
+		f.write("ignore_script_errors=no\n\n")
+		vDevs = self.vDevSelection.get_value()
+		raidLevel = self.raidSelection.get_value()
+		f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel.lower()))
+		f.write("ignore_script_errors=no\n\n")
+		bricks = self.brickSelection.get_value()
+		f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
+		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
+		glusterConfig = self.glusterSelection.get_value()
+		glusterName = self.nameInput.get_text()
+		mkarbCommand = "/opt/gtools/bin/mkarb -b %s"%(bricks)
+		for num in numHosts:
+			mkarbCommand = mkarbCommand + "-n %s"%(hostsList[numHosts])
+		mkarbCommand = mkarbCommand + " \n"
+		r = subprocess.Popen(mkarbCommand, shell=True, stdout=subprocess.PIPE).stdout
+		mkarb = r.read()
+		tuneProfile = self.tuningSelection.get_value()
+		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
+		if glusterConfig == 'Distributed':
+			f.write("replica_count=0\nforce=yes\n")
+			if tuneProfile == 'Default':
+				f.write("key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
+			elif tuneProfile == 'SMB filesharing':
+				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
+			elif tuneProfile == 'Virtualization':
+				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
+		if glusterConfig == 'Distributed Replicated':
+			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
+			if tuneProfile == 'Default':
+				f.write("key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
+			elif tuneProfile == 'SMB filesharing':
+				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
+			elif tuneProfile == 'Virtualization':
+				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
+
+		f.close()
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def autoRefresh(self):
 		global choice
 		if choice == '':
 			choice = self.retrieveVolumes()[0]
-		
+		self.stopButton.set_text("Stop %s"%choice)
+		self.startButton.set_text("Start %s"%choice)
+		self.stopButton.set_text("Stop %s"%choice)
 		self.statusTable.empty()
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
@@ -600,7 +541,7 @@ class MyApp(App):
 		else:
 			self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
 		self.autoRefresh()
-	
+
 	def deleteGluster(self, widget):
 		subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
 		self.notification_message("", "Gluster Volume %s has been deleted"%choice)
