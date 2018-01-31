@@ -19,31 +19,17 @@ createHostsContainer = gui.Widget(width='98%', height=300, style={'padding':'5px
 
 
  #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# UI RENDERING#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-class MyApp(App):
+class FortyFiveDash(App):
 
 	 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# LOCAL FUNCTIONS #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 	def __init__(self, *args):
-		super(MyApp, self).__init__(*args)
+		super(FortyFiveDash, self).__init__(*args)
 	#--------------------------------------------Monitor Functions-------------------------------------------------
 	def retrieveVolumes(self):
 		subprocess.call(['cd ~'], shell=True)
 		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
 		glusters = s.read().splitlines()
 		return glusters
-
-	def detailText(self):
-		r = subprocess.Popen(["gluster volume status %s detail | grep Space"%choice],stdout=subprocess.PIPE, shell=True).stdout
-		lines = r.read().splitlines()
-		lineCount = 0
-		for entry in lines:
-			lineCount = lineCount+1
-		numBricks = lineCount/2
-		bricks = []
-		lineParse=0
-		for num in range(0,numBricks):
-			bricks.append(str("Brick "+str(num)+": "+lines[lineParse].strip(" ")+"|"+lines[lineParse+1].strip(" ")))
-			lineParse = lineParse+2
-		return bricks
 
 	#--------------------------------------------Create Functions---------------------------------------------------
 
@@ -62,7 +48,7 @@ class MyApp(App):
 		if len(self.retrieveVolumes()) == 0:
 			global createContainer
 			global createHostsContainer
-			self.errorContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
+			self.errorContainer = gui.Widget(width='40%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
 			createHostsContainer = gui.Widget(width='98%', height=300, style={'padding':'5px','border':'0px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
 			self.hostsLabel = gui.Label('Hosts Configuration',width='98%', height=30)
 			self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
@@ -261,7 +247,7 @@ class MyApp(App):
 		self.glusterDetailsContainer.append(self.advancedCheckButton)
 		self.glusterDetailsContainer.append(self.resetButton)
 		self.glusterDetailsContainer.append(self.createButton)
-		
+
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create - Zpool ----------------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -328,7 +314,7 @@ class MyApp(App):
 		self.monitorInfoContainer.append(self.infoLabel)
 		self.monitorInfoContainer.append(self.infoTable)
 		#--------------------------------------Volume Status Table-----------------------------------------------
-		self.monitorStatusContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','border':'2px solid #7cdaff','float':'right','display':'block','overflow':'auto'})
+		self.monitorStatusContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
 		self.statusLabel = gui.Label('Volume Status',width="100%", height=30)
 		self.statusTable = gui.Table(width='100%')
 		for line in self.statusTableFunction():
@@ -368,8 +354,8 @@ class MyApp(App):
 		self.drivesVolumeListContainer.append(self.drivesVolumeList)
 		self.drivesVolumeList.set_on_selection_listener(self.driveVolumeListSelected)
 		#-------------------------------------------------------------------------------------
-		self.monitorDrivesListContainer=gui.Widget(width='14%', height=450, style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
-		self.driveLabel = gui.Label('Drive Status', width='100%', height=30)
+		self.monitorDrivesListContainer=gui.Widget(width='15%', height=450, style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
+		self.driveLabel = gui.Label('Drive Status', width='100%', height=20)
 		self.driveList = gui.ListView()
 		drive_List = self.driveMapTable()
 		for entry in drive_List:
@@ -392,8 +378,8 @@ class MyApp(App):
 		self.monitorDrivesListContainer.append(self.driveLabel)
 		self.monitorDrivesListContainer.append(self.driveList)
 		#--------------------------------------Drive info---------------------------------------------------------
-		self.monitorDrivesInfoContainer=gui.Widget(width='32%',height=450, style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
-		self.detailLabel = gui.Label('Brick Storage', width='100%', height=30)
+		self.monitorDrivesInfoContainer=gui.Widget(width='34%',height=450, style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
+		self.detailLabel = gui.Label('Brick Storage', width='100%', height=20)
 		self.detailList = gui.ListView()
 		spaceList = self.detailText()
 		for entry in spaceList:
@@ -410,15 +396,15 @@ class MyApp(App):
 		self.monitorDrivesTextBoxContainer.append(driveInfoTextLabel)
 		self.monitorDrivesTextBoxContainer.append(driveInfoText)
 		#--------------------------------------Drive health box---------------------------------------------------
-		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 235 ,style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
-		self.healthListLabel = gui.Label('Drive Health',width='100%', height=30)
+		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','border':'2px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
+		self.healthListLabel = gui.Label('Drive Health',width='100%', height=19)
 		self.healthTable = gui.Table(width='100%')
 		healthStats = self.getDriveHealth()
 		for line in healthStats:
 			self.healthLine = gui.TableRow()
 			self.healthItem0 = gui.TableItem(line[0])
-			self.healthItem1 = gui.TableItem(line[1])
-			self.healthItem9 = gui.TableItem(line[9])
+			self.healthItem1 = gui.TableItem(line[1].replace("_"," ").title())
+			self.healthItem9 = gui.TableItem(line[9].replace("_"," ").title())
 			self.healthLine.append(self.healthItem0)
 			self.healthLine.append(self.healthItem1)
 			self.healthLine.append(self.healthItem9)
@@ -476,12 +462,12 @@ class MyApp(App):
 		global createContainer
 		global hostsInputContainer
 		mainContainer = gui.Widget(width='98%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		mainMenuContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		monitorVolumeContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		monitorDrivesContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		monitorZpoolContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		createContainer = gui.Widget(width='98%', height=700, style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		createZpoolContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
+		mainMenuContainer = gui.Widget(width='98%', height='100%', style={ 'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorVolumeContainer = gui.Widget(width='98%', height='100%', style={ 'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorDrivesContainer = gui.Widget(width='98%', height='100%', style={ 'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorZpoolContainer = gui.Widget(width='98%', height='100%', style={ 'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createContainer = gui.Widget(width='98%', height=700, style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createZpoolContainer = gui.Widget(width='40%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		mainMenuContainer.append(self.overviewTableContainer)
@@ -506,7 +492,7 @@ class MyApp(App):
 		monitorZpoolContainer.append(self.monitorZpoolZpoolContainer)
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
 		#--------------------------------------TabBox configuation------------------------------------------------
-		self.mainTabBox = gui.TabBox()
+		self.mainTabBox = gui.TabBox(style={'background-color':'#7cdaff'})
 		self.mainTabBox.add_tab(mainMenuContainer, "Main Menu", None)
 		self.mainTabBox.add_tab(createContainer, "Create - Volume", None)
 		#self.mainTabBox.add_tab(createZpoolContainer, "Create - Zpool", None)
@@ -631,6 +617,8 @@ class MyApp(App):
 			hostsConf = hostsConf + "%s\n"%entry
 
 	def hostsInputDropDownFunction(self, widget, selection):
+		if selection == '0':
+			return 0
 		global hostsList
 		hostsList = {}
 		hostsInputContainer.empty()
@@ -966,6 +954,20 @@ class MyApp(App):
 			self.brick = gui.ListItem(entry)
 			self.detailList.append(self.brick)
 
+	def detailText(self):
+		r = subprocess.Popen(["gluster volume status %s detail | grep Space"%choice],stdout=subprocess.PIPE, shell=True).stdout
+		lines = r.read().splitlines()
+		lineCount = 0
+		for entry in lines:
+			lineCount = lineCount+1
+		numBricks = lineCount/2
+		bricks = []
+		lineParse=0
+		for num in range(0,numBricks):
+			bricks.append(str("Brick "+str(num)+": "+lines[lineParse].strip(" ")+" -- | -- "+lines[lineParse+1].strip(" ")))
+			lineParse = lineParse+2
+		return bricks
+
 	def driveMapTable(self):
 		r = subprocess.Popen("lsdevpy -n", stdout=subprocess.PIPE, shell=True).stdout
 		lines = r.read().splitlines()
@@ -1015,8 +1017,8 @@ class MyApp(App):
 		for line in healthStats:
 			self.healthLine = gui.TableRow()
 			self.healthItem0 = gui.TableItem(line[0])
-			self.healthItem1 = gui.TableItem(line[1])
-			self.healthItem9 = gui.TableItem(line[9])
+			self.healthItem1 = gui.TableItem(line[1].replace("_"," ").title())
+			self.healthItem9 = gui.TableItem(line[9].replace("_"," ").title())
 			self.healthLine.append(self.healthItem0)
 			self.healthLine.append(self.healthItem1)
 			self.healthLine.append(self.healthItem9)
@@ -1103,4 +1105,4 @@ class MyApp(App):
 			self.monitorZpoolTable.append(self.zpoolLine)
 
 ip = str(socket.gethostbyname(socket.gethostname()))
-start(MyApp, address=ip, port=8081, multiple_instance=True, start_browser=False, username='ADMIN', password='ADMIN')
+start(FortyFiveDash, address=ip, port=8081, multiple_instance=True, start_browser=False, username='ADMIN', password='ADMIN')
