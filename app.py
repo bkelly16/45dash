@@ -49,18 +49,19 @@ class MyApp(App):
 
 	def reset(self, widget):
 		self.nameInput.set_text('NewVolume')
-		self.chassisSizeInput.select_by_value('30')
 		self.raidSelection.select_by_value('RAIDZ2')
 		self.vDevSelection.select_by_value('3')
 		self.brickSelection.select_by_value('8')
 		self.glusterSelection.select_by_value('Distributed')
 		self.tuningSelection.select_by_value('Default')
-
 	
 	def main(self):
+
 		global choice
 		choice = str(self.retrieveVolumes()[0])
 		if len(self.retrieveVolumes()) == 0:
+			global createContainer
+			global createHostsContainer
 			self.errorContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
 			createHostsContainer = gui.Widget(width='98%', height=300, style={'padding':'5px','border':'0px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
 			self.hostsLabel = gui.Label('Hosts Configuration',width='98%', height=30)
@@ -207,7 +208,7 @@ class MyApp(App):
 		#--------------------------------------Create Configuaration----------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Host inputs--------------------------------------------------------
-		createHostsContainer = gui.Widget(width='98%', height=300, style={'padding':'5px','border':'0px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
+		createHostsContainer = gui.Widget(width='40%', height=300, style={'margin':'0px auto','padding':'5px','border':'2px solid #7cdaff','float':'center','display':'block','overflow':'auto'})
 		self.hostsLabel = gui.Label('Hosts Configuration',width='98%', height=30)
 		self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
 		self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
@@ -220,7 +221,7 @@ class MyApp(App):
 		createHostsContainer.append(self.hostsInputLabel)
 		createHostsContainer.append(self.hostsInputDropDown)
 		#--------------------------------------Gluster details----------------------------------------------------
-		self.glusterDetailsContainer = gui.Widget(width='98%', height=300,  style={'padding':'5px','border':'0px solid #7cdaff','float':'left','display':'block','overflow':'auto'})
+		self.glusterDetailsContainer = gui.Widget(width='40%', height=300,  style={'margin':'0px auto','padding':'5px','border':'2px solid #7cdaff','float':'center','display':'block','overflow':'auto'})
 		self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
 		self.nameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.nameInput.set_text('NewVolume')
@@ -243,7 +244,7 @@ class MyApp(App):
 		self.glusterSelection=gui.DropDown.new_from_list(('Distributed','Distributed Replicated'), width='30%', height=30, style={'float':'right'})
 		self.glusterSelection.select_by_value('Distributed')
 		self.tuningSelectionLabel = gui.Label('Select tuning profile', width='70%', height=30, style={'float':'left'})
-		self.tuningSelection = gui.DropDown.new_from_list(('Default','SMB filesharing','Virtualization'), width='30%', height=30, style={'float':'right'})
+		self.tuningSelection = gui.DropDown.new_from_list(('SMB filesharing','Virtualization'), width='30%', height=30, style={'float':'right'})
 		self.tuningSelection.select_by_value('Default')
 		self.glusterDetailsContainer.append(self.nameLabel)
 		self.glusterDetailsContainer.append(self.nameInput)
@@ -260,6 +261,7 @@ class MyApp(App):
 		self.glusterDetailsContainer.append(self.advancedCheckButton)
 		self.glusterDetailsContainer.append(self.resetButton)
 		self.glusterDetailsContainer.append(self.createButton)
+		
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create - Zpool ----------------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -471,19 +473,19 @@ class MyApp(App):
 		#--------------------------------------Front end configuation---------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Appending containers-----------------------------------------------
+		global createContainer
+		global hostsInputContainer
 		mainContainer = gui.Widget(width='98%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainMenuContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorVolumeContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorDrivesContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorZpoolContainer = gui.Widget(width='98%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
-		createContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createContainer = gui.Widget(width='98%', height=700, style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
 		createZpoolContainer = gui.Widget(width='40%', height='100%', style={'background-color':'#7cdaff','margin':'0px auto','display': 'block', 'overflow':'auto'})
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		mainMenuContainer.append(self.overviewTableContainer)
 		#--------------------------------------Create menu--------------------------------------------------------
-		global createContainer
-		global createHostsContainer
 		createContainer.append(createHostsContainer)
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
 		advancedContainer = gui.Widget(width='100%', height=150, style={'display':'block', 'overflow':'auto'})
@@ -518,6 +520,38 @@ class MyApp(App):
 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Functions-----------------------------------------------------
+	def updateVolumeLists(self):
+		self.volumeList.empty()
+		volume_List = self.retrieveVolumes()
+		for volume in volume_List:
+			status = self.infoTableFunction(volume)[3][1].strip(" ").lower()
+			if status == "started":
+				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
+			elif status == "stopped":
+				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
+			self.volumeList.append(self.volume)
+
+		self.activeVolumeList.empty()
+		active_Volume_List = self.retrieveVolumes()
+		for vol in self.active_Volume_List:
+			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
+			if volumeStatus =='started':
+				self.volumeListItem = gui.ListItem(vol, style={'color':'#29B809'}) #Checks status and colors green if started or red if stopped
+			elif volumeStatus =='stopped':
+				self.volumeListItem = gui.ListItem(vol, style={'color':'#FF0000'})
+			else:
+				self.volumeListItem = gui.ListItem(vol)
+			self.activeVolumeList.append(self.volumeListItem)
+
+		self.drivesVolumeList.empty()
+		for volume in self.retrieveVolumes():
+			drivesInfoStatus = self.infoTableFunction(volume)[3][1].strip(" ").lower()
+			if drivesInfoStatus == "started":
+				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
+			elif drivesInfoStatus == "stopped":
+				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
+			self.drivesVolumeList.append(self.volume)
+
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
 	def getNumActVolumes(self):
@@ -577,7 +611,7 @@ class MyApp(App):
 		self.numDrives2.set_text(len(self.driveMapTable())-1)
 		self.numActDrives2.set_text(self.getNumActDrives())
 		self.numStDrives2.set_text(self.getNumStDrives())
-		self.numZpool2.set_text(len(self.getZpoolStats()-1))
+		self.numZpool2.set_text(len(self.getZpoolStats())-1)
 
 	#-----------------------------------------------Create functions----------------------------------------------
 	def saveHosts(self):
@@ -660,25 +694,27 @@ class MyApp(App):
 		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
 		glusterConfig = self.glusterSelection.get_value()
 		glusterName = self.nameInput.get_text()
-		mkarbCommand = "/opt/gtools/bin/mkarb -b %s -n %s -n %s"%(bricks, "server2", "server1")
-		r = subprocess.Popen(mkarbCommand, shell=True, stdout=subprocess.PIPE).stdout
+		mkarbcmd = "/opt/gtools/bin/mkarb -b %s"%bricks
+		for num in range(1, numHosts+1):
+			mkarbcmd = mkarbcmd + "-n %s"%(hostsInputContainer.children[num].get_text())
+		r = subprocess.Popen(mkarb, shell=True, stdout=subprocess.PIPE).stdout
 		mkarb = r.read()
 		tuneProfile = self.tuningSelection.get_value()
 		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
 		if glusterConfig == 'Distributed':
+			mkarb = ""
+			for i in range(1, int(bricks)+1):
+				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
 			f.write("replica_count=0\nforce=yes\n")
-			if tuneProfile == 'Default':
-				f.write("key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
-			elif tuneProfile == 'SMB filesharing':
-				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
-			elif tuneProfile == 'Virtualization':
-				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
+			#if tuneProfile == 'SMB filesharing':
+			f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
+			#elif tuneProfile == 'Virtualization':
+			#	f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
+		
 		if glusterConfig == 'Distributed Replicated':
-			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
-			if tuneProfile == 'Default':
-				f.write("key=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
-			elif tuneProfile == 'SMB filesharing':
-				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s\n"%mkarb)
+			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
+			if tuneProfile == 'SMB filesharing':
+				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
 			elif tuneProfile == 'Virtualization':
 				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
 
@@ -709,10 +745,6 @@ class MyApp(App):
 		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
 		newEntries = self.retrieveVolumes()
 		newEntryCount = 0
-		self.volumeList.empty()
-		volumes = self.retrieveVolumes()
-		for entry in volumes:
-			self.volumeList.append(entry)
 		for newEntry in newEntries:
 			newEntryCount = newEntryCount + 1
 		if entryCount == newEntryCount:
@@ -720,6 +752,7 @@ class MyApp(App):
 		else:
 			currentVolumeList = newEntries
 			self.notification_message("Success!", "Gluster %s has been made"%(self.nameInput.get_text()))
+		self.updateVolumeLists()
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def monitorVolumesListSelected(self, widget, selection):
 		global choice
@@ -758,39 +791,11 @@ class MyApp(App):
 		self.stopButton.set_text("Stop %s"%choice)
 		self.startButton.set_text("Start %s"%choice)
 		self.deleteButton.set_text("Delete %s"%choice)
-		self.volumeList.empty()
-		volume_List = self.retrieveVolumes()
-		for volume in volume_List:
-			status = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if status == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif status == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.volumeList.append(self.volume)
+		self.updateVolumeLists()
 
 	def startGluster(self, widget):
 		subprocess.call(["gluster volume start %s"%choice], shell=True)
-		self.volumeList.empty()
-		volume_List = self.retrieveVolumes()
-		for volume in volume_List:
-			status = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if status == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif status == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.volumeList.append(self.volume)
 		self.notification_message("", "Gluster Volume %s has been started"%choice)
-		self.activeVolumeList.empty()
-		active_Volume_List = self.retrieveVolumes()
-		for vol in self.active_Volume_List:
-			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
-			if volumeStatus =='started':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#29B809'}) #Checks status and colors green if started or red if stopped
-			elif volumeStatus =='stopped':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#FF0000'})
-			else:
-				self.volumeListItem = gui.ListItem(vol)
-			self.activeVolumeList.append(self.volumeListItem)
 		self.statusTable.empty()
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
@@ -820,28 +825,13 @@ class MyApp(App):
 			self.infoLine.append(self.infoItem2)
 			self.infoTable.append(self.infoLine)
 		self.overviewTableUpdate()
-		self.drivesVolumeList.empty()
-		for volume in self.retrieveVolumes():
-			drivesInfoStatus = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if drivesInfoStatus == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif drivesInfoStatus == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.drivesVolumeList.append(self.volume)
+		self.updateVolumeLists()
 
 	def stopGluster(self, widget):
 		initialStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 		if initialStatus == 'started':
 			subprocess.call(["echo 'y' | gluster volume stop %s"%(choice)], shell=True)
-			self.volumeList.empty()
-			volume_List = self.retrieveVolumes()
-			for volume in volume_List:
-				status = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-				if status == "started":
-					self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-				elif status == "stopped":
-					self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-				self.volumeList.append(self.volume)
+			
 			currentStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 			if currentStatus == 'stopped':
 				self.notification_message("", "Gluster Volume %s has been stopped"%choice)
@@ -849,17 +839,7 @@ class MyApp(App):
 				self.notificaiotn_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
 		else:
 			self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
-		self.activeVolumeList.empty()
-		active_Volume_List = self.retrieveVolumes()
-		for vol in self.active_Volume_List:
-			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
-			if volumeStatus =='started':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#29B809'}) #Checks status and colors green if started or red if stopped
-			elif volumeStatus =='stopped':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#FF0000'})
-			else:
-				self.volumeListItem = gui.ListItem(vol)
-			self.activeVolumeList.append(self.volumeListItem)
+		
 		self.statusTable.empty()
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
@@ -890,42 +870,15 @@ class MyApp(App):
 			self.infoTable.append(self.infoLine)
 		self.numStVolumes2.set_text(self.getNumStoppedVolumes())
 		self.overviewTableUpdate()
-		self.drivesVolumeList.empty()
-		for volume in self.retrieveVolumes():
-			drivesInfoStatus = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if drivesInfoStatus == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif drivesInfoStatus == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.drivesVolumeList.append(self.volume)
-
+		self.updateVolumeLists()
+		
 	def deleteGluster(self, widget):
-		if len(self.retrieveVolumes) == 1:
+		if len(self.retrieveVolumes()) == 1:
 			self.notification_message("Error 403", "Last present gluster, ending will cause dashboard to fail")
 			print "Error 403: Cannot delete last gluster"
 			return 403
 		subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
 		self.notification_message("", "Gluster Volume %s has been deleted"%choice)
-		self.volumeList.empty()
-		volumes = self.retrieveVolumes()
-		for volume in volumes:
-			status = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if status == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif status == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.volumeList.append(self.volume)
-		self.activeVolumeList.empty()
-		active_Volume_List = self.retrieveVolumes()
-		for vol in self.active_Volume_List:
-			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
-			if volumeStatus =='started':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#29B809'}) #Checks status and colors green if started or red if stopped
-			elif volumeStatus =='stopped':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#FF0000'})
-			else:
-				self.volumeListItem = gui.ListItem(vol)
-			self.activeVolumeList.append(self.volumeListItem)
 		self.statusTable.empty()
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
@@ -955,14 +908,7 @@ class MyApp(App):
 			self.infoLine.append(self.infoItem2)
 			self.infoTable.append(self.infoLine)
 		self.overviewTableUpdate()
-		self.drivesVolumeList.empty()
-		for volume in self.retrieveVolumes():
-			drivesInfoStatus = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if drivesInfoStatus == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif drivesInfoStatus == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
-			self.drivesVolumeList.append(self.volume)
+		self.updateVolumeLists()
 
 	def statusTableFunction(self):
 		status = self.infoTableFunction(choice)[3][1].strip(" ").lower()
@@ -1156,4 +1102,5 @@ class MyApp(App):
 			self.zpoolLine.append(self.zpoolHealth)
 			self.monitorZpoolTable.append(self.zpoolLine)
 
-start(MyApp)
+ip = str(socket.gethostbyname(socket.gethostname()))
+start(MyApp, address=ip, port=8081, multiple_instance=True, start_browser=False, username='ADMIN', password='ADMIN')
