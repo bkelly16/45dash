@@ -6,7 +6,7 @@ import re
 import platform, socket
 import time
 
-rConf = open('45dashconf.txt','r')
+rConf = open('45dash.conf','r')
 content = rConf.readlines()
 global port
 global username
@@ -630,7 +630,7 @@ class FortyFiveDash(App):
 				print 'Error 406: Password must be alphanumeric'
 				self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
 				return 0
-		conf = open('45dashconf.txt', 'w+')
+		conf = open('45dash.conf', 'w+')
 		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\n"%(int(newPort), newUsername, newPassword, newColor))
 		conf.close()
 
