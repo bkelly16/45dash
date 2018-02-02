@@ -4,9 +4,9 @@ import sys, tempfile, os
 import subprocess
 import re
 import platform, socket
+import time
 
-global brick
-brick = '1-1'
+
 global zpoolChoice
 zpoolChoice = 'zpool'
 global createContainer
@@ -25,11 +25,7 @@ class FortyFiveDash(App):
 	def __init__(self, *args):
 		super(FortyFiveDash, self).__init__(*args)
 	#--------------------------------------------Monitor Functions-------------------------------------------------
-	def retrieveVolumes(self):
-		subprocess.call(['cd ~'], shell=True)
-		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
-		glusters = s.read().splitlines()
-		return glusters
+
 
 	#--------------------------------------------Create Functions---------------------------------------------------
 
@@ -42,9 +38,13 @@ class FortyFiveDash(App):
 		self.tuningSelection.select_by_value('Default')
 	
 	def main(self):
-
+		#---------------------------------------Preconfig---------------------------------------------------------
+		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
+		global brick
+		brick = str(self.driveMapTable()[1][0]).strip('*')
 		global choice
 		choice = str(self.retrieveVolumes()[0])
+		#--------------------------------------Error version------------------------------------------------------
 		if len(self.retrieveVolumes()) == 0:
 			global createContainer
 			global createHostsContainer
@@ -155,7 +155,7 @@ class FortyFiveDash(App):
 		self.numActVolumesRow.append(self.numActVolumes2)
 		self.numStVolumesRow = gui.TableRow()
 		self.numStVolumes1 = gui.TableItem('Number of stopped volumes 	:')
-		self.numStVolumes2 = gui.TableItem(self.getNumStoppedVolumes())
+		self.numStVolumes2 = gui.TableItem(str(int(len(self.retrieveVolumes()))-int(self.getNumActVolumes())))
 		self.numStVolumesRow.append(self.numStVolumes1)
 		self.numStVolumesRow.append(self.numStVolumes2)
 		self.numDrivesRow = gui.TableRow(style={'background-color':'Silver'})
@@ -506,37 +506,68 @@ class FortyFiveDash(App):
 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Functions-----------------------------------------------------
+	def retrieveVolumes(self):
+		subprocess.call(['cd ~'], shell=True)
+		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
+		glusters = s.read().splitlines()
+		return glusters
+
 	def updateVolumeLists(self):
 		self.volumeList.empty()
-		volume_List = self.retrieveVolumes()
-		for volume in volume_List:
+		self.activeVolumeList.empty()
+		self.drivesVolumeList.empty()
+		volumeList = self.retrieveVolumes()
+
+		for volume in volumeList:
 			status = self.infoTableFunction(volume)[3][1].strip(" ").lower()
 			if status == "started":
 				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
 			elif status == "stopped":
 				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
 			self.volumeList.append(self.volume)
-
-		self.activeVolumeList.empty()
-		active_Volume_List = self.retrieveVolumes()
-		for vol in self.active_Volume_List:
-			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
-			if volumeStatus =='started':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#29B809'}) #Checks status and colors green if started or red if stopped
-			elif volumeStatus =='stopped':
-				self.volumeListItem = gui.ListItem(vol, style={'color':'#FF0000'})
-			else:
-				self.volumeListItem = gui.ListItem(vol)
-			self.activeVolumeList.append(self.volumeListItem)
-
-		self.drivesVolumeList.empty()
-		for volume in self.retrieveVolumes():
-			drivesInfoStatus = self.infoTableFunction(volume)[3][1].strip(" ").lower()
-			if drivesInfoStatus == "started":
-				self.volume = gui.ListItem(volume, style={'color':'#29B809'})
-			elif drivesInfoStatus == "stopped":
-				self.volume = gui.ListItem(volume, style={'color':'#FF0000'})
+			self.activeVolumeList.append(self.volume)
 			self.drivesVolumeList.append(self.volume)
+	
+	def updateMonitorTables(self):
+		self.statusTable.empty()
+		for line in self.statusTableFunction():
+			self.statusLine = gui.TableRow()
+			self.statusItem0 = gui.TableItem(line[0])
+			self.statusItem1 = gui.TableItem(line[1])
+			self.statusItem2 = gui.TableItem(line[2])
+			self.statusItem3 = gui.TableItem(line[3])
+			self.statusItem4 = gui.TableItem(line[4])
+			self.statusItem5 = gui.TableItem(line[5])
+			self.statusItem6 = gui.TableItem(line[6])
+			self.statusLine.append(self.statusItem0)
+			self.statusLine.append(self.statusItem1)
+			self.statusLine.append(self.statusItem2)
+			self.statusLine.append(self.statusItem3)
+			self.statusLine.append(self.statusItem4)
+			self.statusLine.append(self.statusItem5)
+			self.statusLine.append(self.statusItem6)
+			self.statusTable.append(self.statusLine)
+		self.infoTable.empty()
+		for line in self.infoTableFunction(choice):
+			self.infoLine = gui.TableRow()
+			self.infoItem0 = gui.TableItem(line[0])
+			self.infoItem1 = gui.TableItem(line[1])
+			self.infoItem2 = gui.TableItem(line[2])
+			self.infoLine.append(self.infoItem0)
+			self.infoLine.append(self.infoItem1)
+			self.infoLine.append(self.infoItem2)
+			self.infoTable.append(self.infoLine) #Updates monitor tables by emptying and recreating it
+
+	def overviewTableUpdate(self):
+		self.lclHost2.set_text((socket.gethostname()))
+		self.ipAddr2.set_text(socket.gethostbyname(socket.gethostname()))
+		self.numVolumes2.set_text(len(self.retrieveVolumes()))
+		self.numActVolumes2.set_text((self.getNumActVolumes()))
+		self.numStVolumes2.set_text(self.getNumStoppedVolumes())
+		self.numDrives2.set_text(len(self.driveMapTable())-1)
+		self.numActDrives2.set_text(self.getNumActDrives())
+		self.numStDrives2.set_text(self.getNumStDrives())
+		self.numZpool2.set_text(len(self.getZpoolStats())-1)
 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
@@ -587,17 +618,6 @@ class FortyFiveDash(App):
 				if char1[1] != "*":
 					count = count + 1
 		return count
-
-	def overviewTableUpdate(self):
-		self.lclHost2.set_text((socket.gethostname()))
-		self.ipAddr2.set_text(socket.gethostbyname(socket.gethostname()))
-		self.numVolumes2.set_text(len(self.retrieveVolumes()))
-		self.numActVolumes2.set_text((self.getNumActVolumes()))
-		self.numStVolumes2.set_text(self.getNumStoppedVolumes())
-		self.numDrives2.set_text(len(self.driveMapTable())-1)
-		self.numActDrives2.set_text(self.getNumActDrives())
-		self.numStDrives2.set_text(self.getNumStDrives())
-		self.numZpool2.set_text(len(self.getZpoolStats())-1)
 
 	#-----------------------------------------------Create functions----------------------------------------------
 	def saveHosts(self):
@@ -685,19 +705,20 @@ class FortyFiveDash(App):
 		mkarbcmd = "/opt/gtools/bin/mkarb -b %s"%bricks
 		for num in range(1, numHosts+1):
 			mkarbcmd = mkarbcmd + "-n %s"%(hostsInputContainer.children[num].get_text())
-		r = subprocess.Popen(mkarb, shell=True, stdout=subprocess.PIPE).stdout
+		r = subprocess.Popen(mkarbcmd, shell=True, stdout=subprocess.PIPE).stdout
 		mkarb = r.read()
 		tuneProfile = self.tuningSelection.get_value()
+		print tuneProfile
 		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
 		if glusterConfig == 'Distributed':
 			mkarb = ""
 			for i in range(1, int(bricks)+1):
 				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
 			f.write("replica_count=0\nforce=yes\n")
-			#if tuneProfile == 'SMB filesharing':
-			f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
-			#elif tuneProfile == 'Virtualization':
-			#	f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
+			if tuneProfile == 'SMB filesharing':
+				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
+			elif tuneProfile == 'Virtualization':
+				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
 		
 		if glusterConfig == 'Distributed Replicated':
 			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
@@ -709,6 +730,9 @@ class FortyFiveDash(App):
 		f.close()
 
 	def createPress(self, widget):
+		global choice
+		choice = self.retrieveVolumes()[0]
+		start = time.time()
 		self.saveHosts()
 		if hostsConf == 401:
 			print "Error 401: Invalid Character used for a name"
@@ -731,6 +755,8 @@ class FortyFiveDash(App):
 			entryCount = entryCount + 1
 		self.gDeployFile()
 		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
+		end = time.time()
+		totalTime = end-start
 		newEntries = self.retrieveVolumes()
 		newEntryCount = 0
 		for newEntry in newEntries:
@@ -739,81 +765,43 @@ class FortyFiveDash(App):
 			self.notification_message("Error!", "Don't know what happened but %s couldn't be made"%self.nameInput.get_text())
 		else:
 			currentVolumeList = newEntries
-			self.notification_message("Success!", "Gluster %s has been made"%(self.nameInput.get_text()))
+			self.notification_message("Success!", "Gluster %s has been made, in a whopping %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 3))))
 		self.updateVolumeLists()
 	#-----------------------------------------------Monitor Functions---------------------------------------------
+	def infoTableFunction(self, choice):
+		r = subprocess.Popen(['gluster volume info %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
+		lines = r.read().splitlines()
+		results = []
+		for line in lines:
+			splitText = re.split(r':', line)
+			while len(splitText) < 3:
+				splitText.append("")
+			results.append(splitText)
+		entries = []
+		for entry in results:
+			tupleEntry = tuple(entry)
+			entries.append(tupleEntry)
+		del entries[0]
+		return entries
+
 	def monitorVolumesListSelected(self, widget, selection):
 		global choice
-		if choice == '':
-			choice = self.retrieveVolumes()[0]
 		choice = self.volumeList.children[selection].get_text()
- 
-		self.statusTable.empty()
-		for line in self.statusTableFunction():
-			self.statusLine = gui.TableRow()
-			self.statusItem0 = gui.TableItem(line[0])
-			self.statusItem1 = gui.TableItem(line[1])
-			self.statusItem2 = gui.TableItem(line[2])
-			self.statusItem3 = gui.TableItem(line[3])
-			self.statusItem4 = gui.TableItem(line[4])
-			self.statusItem5 = gui.TableItem(line[5])
-			self.statusItem6 = gui.TableItem(line[6])
-			self.statusLine.append(self.statusItem0)
-			self.statusLine.append(self.statusItem1)
-			self.statusLine.append(self.statusItem2)
-			self.statusLine.append(self.statusItem3)
-			self.statusLine.append(self.statusItem4)
-			self.statusLine.append(self.statusItem5)
-			self.statusLine.append(self.statusItem6)
-			self.statusTable.append(self.statusLine)
-		self.infoTable.empty()
-		for line in self.infoTableFunction(choice):
-			self.infoLine = gui.TableRow()
-			self.infoItem0 = gui.TableItem(line[0])
-			self.infoItem1 = gui.TableItem(line[1])
-			self.infoItem2 = gui.TableItem(line[2])
-			self.infoLine.append(self.infoItem0)
-			self.infoLine.append(self.infoItem1)
-			self.infoLine.append(self.infoItem2)
-			self.infoTable.append(self.infoLine)
 		self.stopButton.set_text("Stop %s"%choice)
 		self.startButton.set_text("Start %s"%choice)
 		self.deleteButton.set_text("Delete %s"%choice)
 		self.updateVolumeLists()
+		self.updateMonitorTables()
 
 	def startGluster(self, widget):
 		subprocess.call(["gluster volume start %s"%choice], shell=True)
-		self.notification_message("", "Gluster Volume %s has been started"%choice)
-		self.statusTable.empty()
-		for line in self.statusTableFunction():
-			self.statusLine = gui.TableRow()
-			self.statusItem0 = gui.TableItem(line[0])
-			self.statusItem1 = gui.TableItem(line[1])
-			self.statusItem2 = gui.TableItem(line[2])
-			self.statusItem3 = gui.TableItem(line[3])
-			self.statusItem4 = gui.TableItem(line[4])
-			self.statusItem5 = gui.TableItem(line[5])
-			self.statusItem6 = gui.TableItem(line[6])
-			self.statusLine.append(self.statusItem0)
-			self.statusLine.append(self.statusItem1)
-			self.statusLine.append(self.statusItem2)
-			self.statusLine.append(self.statusItem3)
-			self.statusLine.append(self.statusItem4)
-			self.statusLine.append(self.statusItem5)
-			self.statusLine.append(self.statusItem6)
-			self.statusTable.append(self.statusLine)
-		self.infoTable.empty()
-		for line in self.infoTableFunction(choice):
-			self.infoLine = gui.TableRow()
-			self.infoItem0 = gui.TableItem(line[0])
-			self.infoItem1 = gui.TableItem(line[1])
-			self.infoItem2 = gui.TableItem(line[2])
-			self.infoLine.append(self.infoItem0)
-			self.infoLine.append(self.infoItem1)
-			self.infoLine.append(self.infoItem2)
-			self.infoTable.append(self.infoLine)
-		self.overviewTableUpdate()
+		self.notification_message("Success", "Gluster Volume %s has been started"%choice)
+		numActVol = self.getNumActVolumes()
+		numVol = len(self.retrieveVolumes())
+		self.updateMonitorTables()
 		self.updateVolumeLists()
+		self.numActVolumes2.set_text((str(numActVol)))
+		self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
 
 	def stopGluster(self, widget):
 		initialStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
@@ -822,80 +810,36 @@ class FortyFiveDash(App):
 			
 			currentStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 			if currentStatus == 'stopped':
-				self.notification_message("", "Gluster Volume %s has been stopped"%choice)
+				self.notification_message("Success", "Gluster Volume %s has been stopped"%choice)
+				self.updateVolumeLists()
+				self.updateMonitorTables()
+				numActVol = self.getNumActVolumes()
+				numVol = len(self.retrieveVolumes())
+				self.numActVolumes2.set_text((str(numActVol)))
+				self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
 			if currentStatus != 'stopped':
 				self.notificaiotn_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
 		else:
 			self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
 		
-		self.statusTable.empty()
-		for line in self.statusTableFunction():
-			self.statusLine = gui.TableRow()
-			self.statusItem0 = gui.TableItem(line[0])
-			self.statusItem1 = gui.TableItem(line[1])
-			self.statusItem2 = gui.TableItem(line[2])
-			self.statusItem3 = gui.TableItem(line[3])
-			self.statusItem4 = gui.TableItem(line[4])
-			self.statusItem5 = gui.TableItem(line[5])
-			self.statusItem6 = gui.TableItem(line[6])
-			self.statusLine.append(self.statusItem0)
-			self.statusLine.append(self.statusItem1)
-			self.statusLine.append(self.statusItem2)
-			self.statusLine.append(self.statusItem3)
-			self.statusLine.append(self.statusItem4)
-			self.statusLine.append(self.statusItem5)
-			self.statusLine.append(self.statusItem6)
-			self.statusTable.append(self.statusLine)
-		self.infoTable.empty()
-		for line in self.infoTableFunction(choice):
-			self.infoLine = gui.TableRow()
-			self.infoItem0 = gui.TableItem(line[0])
-			self.infoItem1 = gui.TableItem(line[1])
-			self.infoItem2 = gui.TableItem(line[2])
-			self.infoLine.append(self.infoItem0)
-			self.infoLine.append(self.infoItem1)
-			self.infoLine.append(self.infoItem2)
-			self.infoTable.append(self.infoLine)
-		self.numStVolumes2.set_text(self.getNumStoppedVolumes())
-		self.overviewTableUpdate()
-		self.updateVolumeLists()
-		
 	def deleteGluster(self, widget):
-		if len(self.retrieveVolumes()) == 1:
+		global choice
+		numVol = len(self.retrieveVolumes())
+		if numVol == 1:
 			self.notification_message("Error 403", "Last present gluster, ending will cause dashboard to fail")
 			print "Error 403: Cannot delete last gluster"
 			return 403
 		subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
+		numVol2 = len(self.retrieveVolumes())
+		if numVol2 == numVol:
+			self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
+			return 0
 		self.notification_message("", "Gluster Volume %s has been deleted"%choice)
-		self.statusTable.empty()
-		for line in self.statusTableFunction():
-			self.statusLine = gui.TableRow()
-			self.statusItem0 = gui.TableItem(line[0])
-			self.statusItem1 = gui.TableItem(line[1])
-			self.statusItem2 = gui.TableItem(line[2])
-			self.statusItem3 = gui.TableItem(line[3])
-			self.statusItem4 = gui.TableItem(line[4])
-			self.statusItem5 = gui.TableItem(line[5])
-			self.statusItem6 = gui.TableItem(line[6])
-			self.statusLine.append(self.statusItem0)
-			self.statusLine.append(self.statusItem1)
-			self.statusLine.append(self.statusItem2)
-			self.statusLine.append(self.statusItem3)
-			self.statusLine.append(self.statusItem4)
-			self.statusLine.append(self.statusItem5)
-			self.statusLine.append(self.statusItem6)
-			self.statusTable.append(self.statusLine)
-		self.infoTable.empty()
-		for line in self.infoTableFunction(choice):
-			self.infoLine = gui.TableRow()
-			self.infoItem0 = gui.TableItem(line[0])
-			self.infoItem1 = gui.TableItem(line[1])
-			self.infoItem2 = gui.TableItem(line[2])
-			self.infoLine.append(self.infoItem0)
-			self.infoLine.append(self.infoItem1)
-			self.infoLine.append(self.infoItem2)
-			self.infoTable.append(self.infoLine)
-		self.overviewTableUpdate()
+		choice = self.retrieveVolumes()[0]
+		numActVol = self.getNumActVolumes()
+		self.updateMonitorTables()
+		self.numActVolumes2.set_text((str(numActVol)))
+		self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))	
 		self.updateVolumeLists()
 
 	def statusTableFunction(self):
@@ -929,21 +873,7 @@ class FortyFiveDash(App):
 			blankList = [('Volume is not started','','','','','','')]
 			return blankList
 
-	def infoTableFunction(self, choice):
-		r = subprocess.Popen(['gluster volume info %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
-		lines = r.read().splitlines()
-		results = []
-		for line in lines:
-			splitText = re.split(r':', line)
-			while len(splitText) < 3:
-				splitText.append("")
-			results.append(splitText)
-		entries = []
-		for entry in results:
-			tupleEntry = tuple(entry)
-			entries.append(tupleEntry)
-		del entries[0]
-		return entries
+
 	#------------------------------------------------Drives--------------------------------------------
 	def driveVolumeListSelected(self, widget, selection):
 		global choice
@@ -1025,19 +955,39 @@ class FortyFiveDash(App):
 			self.healthTable.append(self.healthLine)
 
 	def getDriveHealth(self):
+		isSSD = False
 		global brick
-		s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
-		lines = s.read().splitlines()
+		q = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s | grep 'Rotation Rate'"%brick], shell=True, stdout=subprocess.PIPE).stdout
+		lines2 = q.read().splitlines()
+		print lines2
+		for line in lines2:
+			print line
+			if line == "Rotation Rate:    Solid State Device":
+				isSSD = True
 		useful =[]
-
-		for i in range(55,73):
-			splitLine = lines[i].split()
-			if splitLine[1] == "Unknown_Attribute":
-				inte =1
-			elif splitLine[1] == "Offline_Uncorrectable":
-				inte = 2
-			else:
-				useful.append(tuple(splitLine))
+		if isSSD == True:
+			s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
+			lines = s.read().splitlines()
+			for i in range(55,73):
+				splitLine = lines[i].split()
+				if splitLine[1] == "Unknown_Attribute":
+					inte =1
+				elif splitLine[1] == "Offline_Uncorrectable":
+					inte = 2
+				else:
+					useful.append(tuple(splitLine))
+		elif isSSD == False:
+			s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
+			lines = s.read().splitlines()
+			for i in range(57,70):
+				print i
+				splitLine = lines[i].split()
+				if splitLine[1] == "Unknown_Attribute":
+					inte =1
+				elif splitLine[1] == "Offline_Uncorrectable":
+					inte = 2
+				else:
+					useful.append(tuple(splitLine))
 		return useful
 	#---------------------------------------Zpool functions----------------------------------------------------
 	def getZpoolStats(self):
@@ -1069,7 +1019,7 @@ class FortyFiveDash(App):
 				self.zpoolStatusLine.append(self.zpoolWrite)
 				self.zpoolStatusLine.append(self.zpoolCksum)
 				self.zpoolStatusTable.append(self.zpoolStatusLine)
-		self.deleteZpoolButton.set_text("Delete %s"%zpoolChoice)
+			self.deleteZpoolButton.set_text("Delete %s"%zpoolChoice)
 
 	def getZpoolStatus(self):
 		zpool = zpoolChoice.strip('~')
@@ -1105,4 +1055,4 @@ class FortyFiveDash(App):
 			self.monitorZpoolTable.append(self.zpoolLine)
 
 ip = str(socket.gethostbyname(socket.gethostname()))
-start(FortyFiveDash, address=ip, port=8081, multiple_instance=True, start_browser=False, username='ADMIN', password='ADMIN')
+start(FortyFiveDash, address=ip, port=8080, multiple_instance=True, start_browser=False, username=('ADMIN@'+ip), password='ADMIN')
