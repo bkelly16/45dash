@@ -47,6 +47,7 @@ class FortyFiveDash(App):
 	
 	def main(self):
 		#---------------------------------------Preconfig---------------------------------------------------------
+		subprocess.call(["chmod +x /bin/45dash/lsdevpy"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
 		global lastBrick
 		for num in range(1,1+len(self.retrieveVolumes())):
@@ -149,7 +150,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Overview Table-----------------------------------------------------------
 		self.overviewTableContainer = gui.Widget(width='40%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.overviewTableLabel = gui.Label("Overview", width='100%')
-		self.overviewTable = gui.Table(width='100%')
+		self.overviewTable = gui.Table(width='100%',style={'text-align':'left'})
 		self.lclHostRow = gui.TableRow()
 		self.lclHost = gui.TableItem('localhost Name	:')
 		self.lclHost2 = gui.TableItem(socket.gethostname())
@@ -346,7 +347,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Volume info Table---------------------------------------------------
 		self.monitorInfoContainer = gui.Widget(width='49%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.infoLabel = gui.Label('Volume Info', width='100%', height=30)
-		self.infoTable = gui.Table(width='100%')
+		self.infoTable = gui.Table(width='100%',style={'text-align':'left'})
 		for line in self.infoTableFunction(choice):
 			self.infoLine = gui.TableRow()
 			self.infoItem0 = gui.TableItem(line[0])
@@ -425,25 +426,21 @@ class FortyFiveDash(App):
 		#--------------------------------------Drive info---------------------------------------------------------
 		self.monitorDrivesInfoContainer=gui.Widget(width='34%',height=450, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.detailLabel = gui.Label('Brick Storage', width='100%', height=20)
-		self.detailList = gui.ListView()
-		spaceList = self.detailText()
-		for entry in spaceList:
-			self.brick = gui.ListItem(entry)
-			self.detailList.append(self.brick)
+		self.detailTable = gui.Table(width='100%', style={'text-align':'left'})
+		self.detailTable.append_from_list(self.detailText())
 		self.monitorDrivesInfoContainer.append(self.detailLabel)
-		self.monitorDrivesInfoContainer.append(self.detailList)
+		self.monitorDrivesInfoContainer.append(self.detailTable)
 		#--------------------------------------Drive Text Box-----------------------------------------------------
 		self.monitorDrivesTextBoxContainer = gui.Widget(width='26%', height=450, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
-		global driveInfoText
-		driveInfoTextLabel = gui.Label('Drive Info', height=30, width='100%')
-		driveInfoText = gui.TextInput(False,width='100%', height=300)
-		driveInfoText.set_text('Select a drive from list to view information')
-		self.monitorDrivesTextBoxContainer.append(driveInfoTextLabel)
-		self.monitorDrivesTextBoxContainer.append(driveInfoText)
+		self.driveInfoTextLabel = gui.Label('Drive Info', height=30, width='100%')
+		self.driveInfoTable = gui.Table(width='100%', style={'text-align':'left'})
+		self.driveInfoTable.append_from_list(('Select Drive from list to view'))
+		self.monitorDrivesTextBoxContainer.append(self.driveInfoTextLabel)
+		self.monitorDrivesTextBoxContainer.append(self.driveInfoTable)
 		#--------------------------------------Drive health box---------------------------------------------------
 		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.healthListLabel = gui.Label('Drive Health',width='100%', height=19)
-		self.healthTable = gui.Table(width='100%')
+		self.healthTable = gui.Table(width='100%',style={'text-align':'left'})
 		healthStats = self.getDriveHealth()
 		for line in healthStats:
 			self.healthLine = gui.TableRow()
@@ -959,14 +956,18 @@ class FortyFiveDash(App):
 			lineCount = lineCount+1
 		numBricks = lineCount/2
 		bricks = []
+		bricks2 = []
 		lineParse=0
 		for num in range(0,numBricks):
-			bricks.append(str("Brick "+str(num)+": "+lines[lineParse].strip(" ")+" -- | -- "+lines[lineParse+1].strip(" ")))
+			bricks.append(str("Brick "+str(num)+": /"+lines[lineParse].strip(" ")+"/"+lines[lineParse+1].strip(" ")))
 			lineParse = lineParse+2
-		return bricks
+		for line in bricks:
+			splitBricks = re.split(r"/", line)
+			bricks2.append(tuple(splitBricks))
+		return bricks2
 
 	def driveMapTable(self):
-		r = subprocess.Popen("lsdevpy -n", stdout=subprocess.PIPE, shell=True).stdout
+		r = subprocess.Popen("/bin/45dash/lsdevpy -n", stdout=subprocess.PIPE, shell=True).stdout
 		lines = r.read().splitlines()
 
 		lines2 = []
@@ -1006,10 +1007,13 @@ class FortyFiveDash(App):
 		lines = s.read().splitlines()
 		r = subprocess.Popen(["df /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
 		lines2 = s.read().splitlines()
+		unsplitList = []
 		modelNumber = lines[4]
 		serialNumber = lines[5]
 		firmwareRevision = lines[6]
-		message = modelNumber + "\n" + serialNumber + "\n" + firmwareRevision + "\n"
+		unsplitList.append(modelNumber)
+		unsplitList.append(serialNumber)
+		unsplitList.append(firmwareRevision)
 		q = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s | grep 'Rotation Rate'"%brick], shell=True, stdout=subprocess.PIPE).stdout
 		lines3 = q.read().splitlines()
 		for line in lines3:
@@ -1017,7 +1021,19 @@ class FortyFiveDash(App):
 				driveType = "\t Type: Solid State Drive"
 			else:
 				driveType = "Hard Disk Drive\n"+line
-		message = message + "\n" + driveType
+		unsplitList.append(driveType)
+		splitList = []
+		for entry in unsplitList:
+			newEntry = re.split(r':', entry)
+			splitList.append(newEntry)
+		self.driveInfoTable.empty()
+		for entry in splitList:
+			self.infoLine = gui.TableRow()
+			self.dInfoItem0 = gui.TableItem(entry[0])
+			self.dInfoItem1 = gui.TableItem(entry[1])
+			self.infoLine.append(self.dInfoItem0)
+			self.infoLine.append(self.dInfoItem1)
+			self.driveInfoTable.append(self.infoLine)
 		driveInfoText.set_text(message)
 		self.healthTable.empty()
 		healthStats = self.getDriveHealth()
@@ -1055,7 +1071,6 @@ class FortyFiveDash(App):
 			s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
 			lines = s.read().splitlines()
 			for i in range(57,70):
-				print i
 				splitLine = lines[i].split()
 				if splitLine[1] == "Unknown_Attribute":
 					inte =1
