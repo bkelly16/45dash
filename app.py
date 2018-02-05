@@ -59,8 +59,7 @@ class FortyFiveDash(App):
 		subprocess.call(["chmod +x /bin/45dash/lsdevpy"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
 		global lastBrick
-		for num in range(1,1+len(self.retrieveVolumes())):
-			lastBrick = 10*num
+		lastBrick = len(self.retrieveVolumes()) * 10
 
 		
 		#--------------------------------------Error version------------------------------------------------------
@@ -333,7 +332,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Volume List-------------------------------------------------------
 		self.monitorVolumeContainer = gui.Widget(width='10%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
-		self.volumeLabel = gui.Label('Active Volumes', width='100%', height='10%')
+		self.volumeLabel = gui.Label('Active Volumes', width='100%', height=30)
 		self.volumeList = gui.ListView(width='100%', style={'float':'left'})
 		for volume in self.active_Volume_List:
 			infoStatus = self.infoTableFunction(volume)[3][1].strip(" ").lower()
@@ -373,6 +372,20 @@ class FortyFiveDash(App):
 		self.monitorStatusContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.statusLabel = gui.Label('Volume Status',width="100%", height=30)
 		self.statusTable = gui.Table(width='100%')
+		self.statusTableTitle = gui.TableRow()
+		self.statusTableTitle0 = gui.TableItem("Gluster Process")
+		self.statusTableTitle1 = gui.TableItem(" ")
+		self.statusTableTitle2 = gui.TableItem("TCP Port")
+		self.statusTableTitle3 = gui.TableItem("RDMA Port")
+		self.statusTableTitle4 = gui.TableItem("Online")
+		self.statusTableTitle5 = gui.TableItem("Pid")
+		self.statusTableTitle.append(self.statusTableTitle0)
+		self.statusTableTitle.append(self.statusTableTitle1)
+		self.statusTableTitle.append(self.statusTableTitle2)
+		self.statusTableTitle.append(self.statusTableTitle3)
+		self.statusTableTitle.append(self.statusTableTitle4)
+		self.statusTableTitle.append(self.statusTableTitle5)
+		self.statusTable.append(self.statusTableTitle)
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
 			self.statusItem0 = gui.TableItem(line[0])
@@ -549,7 +562,6 @@ class FortyFiveDash(App):
 		self.mainTabBox = gui.TabBox(style={'background-color':'%s'%baseColor})
 		self.mainTabBox.add_tab(mainMenuContainer, "Main Menu", None)
 		self.mainTabBox.add_tab(createContainer, "Create - Volume", None)
-		#self.mainTabBox.add_tab(createZpoolContainer, "Create - Zpool", None)
 		self.mainTabBox.add_tab(monitorVolumeContainer, "Monitor - Volume", None)
 		self.mainTabBox.add_tab(monitorDrivesContainer, "Monitor - Drives", None)
 		self.mainTabBox.add_tab(monitorZpoolContainer, "Monitor - Zpool", None)
@@ -584,7 +596,20 @@ class FortyFiveDash(App):
 	
 	def updateMonitorTables(self):
 		self.statusTable.empty()
-		self.statusTable.new_from_list(['Gluster Process', '', 'RDMA Port', 'Online', 'Pid'])
+		self.statusTableTitle = gui.TableRow()
+		self.statusTableTitle0 = gui.TableItem("Gluster Process")
+		self.statusTableTitle1 = gui.TableItem(" ")
+		self.statusTableTitle2 = gui.TableItem("TCP Port")
+		self.statusTableTitle3 = gui.TableItem("RDMA Port")
+		self.statusTableTitle4 = gui.TableItem("Online")
+		self.statusTableTitle5 = gui.TableItem("Pid")
+		self.statusTableTitle.append(self.statusTableTitle0)
+		self.statusTableTitle.append(self.statusTableTitle1)
+		self.statusTableTitle.append(self.statusTableTitle2)
+		self.statusTableTitle.append(self.statusTableTitle3)
+		self.statusTableTitle.append(self.statusTableTitle4)
+		self.statusTableTitle.append(self.statusTableTitle5)
+		self.statusTable.append(self.statusTableTitle)
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
 			self.statusItem0 = gui.TableItem(line[0])
@@ -645,10 +670,7 @@ class FortyFiveDash(App):
 				return 0
 		conf = open('45dash.conf', 'w+')
 		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\n"%(int(newPort), newUsername, newPassword, newColor))
-		conf.close()
-
-
-
+		conf.close() 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
 	def getNumActVolumes(self):
@@ -806,7 +828,7 @@ class FortyFiveDash(App):
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
 			elif tuneProfile == 'Virtualization':
 				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
-		lastBrick = len(self.retrieveVolumes())*10
+		lastBrick = lastBrick + 10
 		f.close()
 
 	def createPress(self, widget):
@@ -955,11 +977,8 @@ class FortyFiveDash(App):
 	def driveVolumeListSelected(self, widget, selection):
 		global choice
 		choice = self.drivesVolumeList.children[selection].get_text()
-		self.detailList.empty()
-		details = self.detailText()
-		for entry in details:
-			self.brick = gui.ListItem(entry)
-			self.detailList.append(self.brick)
+		self.detailTable.empty()
+		self.detailTable.append_from_list(self.detailText())
 
 	def detailText(self):
 		r = subprocess.Popen(["gluster volume status %s detail | grep Space"%choice],stdout=subprocess.PIPE, shell=True).stdout
