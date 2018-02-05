@@ -844,6 +844,7 @@ class FortyFiveDash(App):
 		f.close()
 
 	def createPress(self, widget):
+		global lastBrick
 		isRetry = False
 		name = self.nameInput.get_text()
 		for char in name:
