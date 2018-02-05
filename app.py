@@ -23,6 +23,15 @@ global hostsInputContainer
 hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
 global createHostsContainer
 createHostsContainer = gui.Widget(width='100%', height=300, style={'padding':'5px','border':'0px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+global localHost
+localHost1 = socket.gethostname()
+localHost = ''
+for char in localHost1:
+	if char != '.':
+		localHost = localHost + char
+	if char == '.':
+		break
+
 
 
 
@@ -148,12 +157,13 @@ class FortyFiveDash(App):
 		self.mainMenuVolumeContainer.append(self.activeVolumeLabel)
 		self.mainMenuVolumeContainer.append(self.activeVolumeList)
 		#--------------------------------------Overview Table-----------------------------------------------------------
+		global localhost
 		self.overviewTableContainer = gui.Widget(width='40%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.overviewTableLabel = gui.Label("Overview", width='100%')
 		self.overviewTable = gui.Table(width='100%',style={'text-align':'left'})
 		self.lclHostRow = gui.TableRow()
 		self.lclHost = gui.TableItem('localhost Name	:')
-		self.lclHost2 = gui.TableItem(socket.gethostname())
+		self.lclHost2 = gui.TableItem(localHost)
 		self.lclHostRow.append(self.lclHost)
 		self.lclHostRow.append(self.lclHost2)
 		self.ipAddrRow = gui.TableRow()
@@ -434,7 +444,10 @@ class FortyFiveDash(App):
 		self.monitorDrivesTextBoxContainer = gui.Widget(width='26%', height=450, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.driveInfoTextLabel = gui.Label('Drive Info', height=30, width='100%')
 		self.driveInfoTable = gui.Table(width='100%', style={'text-align':'left'})
-		self.driveInfoTable.append_from_list(('Select Drive from list to view'))
+		self.driveInfoDefault = gui.TableRow()
+		self.driveInfoDefaultItem = gui.TableItem('Select Drive From List To View')
+		self.driveInfoDefault.append(self.driveInfoDefaultItem)
+		self.driveInfoTable.append(self.driveInfoDefault)
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTextLabel)
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTable)
 		#--------------------------------------Drive health box---------------------------------------------------
@@ -998,7 +1011,6 @@ class FortyFiveDash(App):
 		return lines4
 
 	def brickStatus(self, widget, selection):
-		driveInfoText.set_text(" ")
 		if self.driveList.children[selection].get_text() == "Drive Alias":
 			return 0
 		global brick
@@ -1034,7 +1046,6 @@ class FortyFiveDash(App):
 			self.infoLine.append(self.dInfoItem0)
 			self.infoLine.append(self.dInfoItem1)
 			self.driveInfoTable.append(self.infoLine)
-		driveInfoText.set_text(message)
 		self.healthTable.empty()
 		healthStats = self.getDriveHealth()
 		for line in healthStats:
