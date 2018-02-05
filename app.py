@@ -15,6 +15,8 @@ password = str(content[2]).replace("password=","").strip("\n")
 baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
 rConf.close()
 
+global isAdvanced
+isAdvanced = False
 global lastBrick
 global zpoolChoice
 zpoolChoice = 'zpool'
@@ -58,6 +60,7 @@ class FortyFiveDash(App):
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /bin/45dash/lsdevpy"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
+		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick
 		lastBrick = len(self.retrieveVolumes()) * 10
 
@@ -83,7 +86,7 @@ class FortyFiveDash(App):
 
 			#--------------------------------------Gluster details----------------------------------------------------
 			
-			self.glusterDetailsContainer = gui.Widget(width='100%', height=300,  style={'padding':'5px','border':'0px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+			self.glusterDetailsContainer = gui.Widget(width='100%', height=400,  style={'padding':'5px','border':'0px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 			self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
 			self.nameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 			self.nameInput.set_text('NewVolume')
@@ -270,10 +273,10 @@ class FortyFiveDash(App):
 		self.raidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3'), width='30%', height=30, style={'float':'right'})
 		self.raidSelection.select_by_value('RAIDZ2')
 		self.vDevLabel = gui.Label('Select # of VDevs', width='70%', height=30, style={'float':'left'})
-		self.vDevSelection = gui.DropDown.new_from_list(('2','3','4','5','6'), width='30%', height=30, style={'float':'right'})
+		self.vDevSelection = gui.DropDown.new_from_list(('1','2','3','4','5','6'), width='30%', height=30, style={'float':'right'})
 		self.vDevSelection.select_by_value('3')
 		self.brickLabel = gui.Label('Select # of bricks for ZFS pool', width='70%', height=30, style={'float':'left'})
-		self.brickSelection = gui.DropDown.new_from_list(('2','3','4','5','6','7','8'), width='30%', height=30, style={'float':'right'})
+		self.brickSelection = gui.DropDown.new_from_list(('2','3','4','5','6','7','8','9','10'), width='30%', height=30, style={'float':'right'})
 		self.brickSelection.select_by_value('8')
 		self.advancedCheckButton = gui.Button('Show advanced options', width='100%', height=30, style={'float':'left'})
 		self.advancedCheckButton.set_on_click_listener(self.showAdvanced)
@@ -541,7 +544,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Create menu--------------------------------------------------------
 		createContainer.append(createHostsContainer)
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
-		advancedContainer = gui.Widget(width='100%', height=150, style={'display':'block', 'overflow':'auto'})
+		self.advancedContainer = gui.Widget(width='100%', height=150, style={'display':'block', 'overflow':'auto'})
 		createContainer.append(self.glusterDetailsContainer)
 		#--------------------------------------Create Zpool menu--------------------------------------------------
 		createZpoolContainer.append(self.zpoolDetailsContainer)
@@ -739,6 +742,7 @@ class FortyFiveDash(App):
 			hostsConf = hostsConf + "%s\n"%entry
 
 	def hostsInputDropDownFunction(self, widget, selection):
+		global localHost
 		if selection == '0':
 			return 0
 		global hostsList
@@ -752,7 +756,7 @@ class FortyFiveDash(App):
 			if num % 2 == 0:
 				self.hostInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
 			if num == 1:
-				self.hostInput.set_text(socket.gethostname())
+				self.hostInput.set_text(localHost)
 			else:
 				self.hostInput.set_text('gluster%d'%num)
 			hostsList[num] = (self.hostInput.get_text())
@@ -760,7 +764,9 @@ class FortyFiveDash(App):
 		createHostsContainer.append(hostsInputContainer)
 
 	def showAdvanced(self, widget):
-		advancedContainer.empty()
+		global isAdvanced
+		isAdvanced = True
+		self.advancedContainer.empty()
 		self.ashiftLabel = gui.Label('ashift value:', width='50%', height=30, style={'float':'left'})
 		self.ashiftInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
 		self.ashiftInput.set_text('9')
@@ -770,13 +776,13 @@ class FortyFiveDash(App):
 		self.arbiterLabel = gui.Label('Arbiter Bricks (?)', width='50%', height=30, style={'float':'left'})
 		self.arbiterInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
 		self.arbiterInput.set_text("100G")
-		advancedContainer.append(self.ashiftLabel)
-		advancedContainer.append(self.ashiftInput)
-		advancedContainer.append(self.paddingLabel)
-		advancedContainer.append(self.paddingInput)
-		advancedContainer.append(self.arbiterLabel)
-		advancedContainer.append(self.arbiterInput)
-		createContainer.append(advancedContainer)
+		self.advancedContainer.append(self.ashiftLabel)
+		self.advancedContainer.append(self.ashiftInput)
+		self.advancedContainer.append(self.paddingLabel)
+		self.advancedContainer.append(self.paddingInput)
+		self.advancedContainer.append(self.arbiterLabel)
+		self.advancedContainer.append(self.arbiterInput)
+		self.glusterDetailsContainer.append(self.advancedContainer)
 
 	def reset(self, widget):
 		self.nameInput.set_text('NewVolume')
@@ -798,10 +804,16 @@ class FortyFiveDash(App):
 		f.write("ignore_script_errors=no\n\n")
 		vDevs = self.vDevSelection.get_value()
 		raidLevel = self.raidSelection.get_value()
-		f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel.lower()))
+		if isAdvanced:
+			f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a %s -bq\n"%(vDevs, raidLevel.lower(), str(self.ashiftInput.get_text())))
+		elif not isAdvanced:
+			f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel.lower()))
 		f.write("ignore_script_errors=no\n\n")
 		bricks = self.brickSelection.get_value()
-		f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
+		if isAdvanced:
+			f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A %s -C -b %s -p %s -fq\n"%(self.arbiterInput.get_text() ,bricks, str(self.paddingInput.get_text())))
+		elif not isAdvanced:
+			f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
 		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
 		glusterConfig = self.glusterSelection.get_value()
 		glusterName = self.nameInput.get_text()
@@ -832,6 +844,7 @@ class FortyFiveDash(App):
 		f.close()
 
 	def createPress(self, widget):
+		isRetry = False
 		name = self.nameInput.get_text()
 		for char in name:
 			if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
@@ -860,7 +873,16 @@ class FortyFiveDash(App):
 		totalTime = end-start
 		newEntries = len(self.retrieveVolumes())
 		if entries1 == newEntries:
-			self.notification_message("Error!", "Don't know what happened but %s couldn't be made"%self.nameInput.get_text())
+			if not isRetry:
+				self.notification_message("Error!", "Don't know what happened but %s couldn't be made. May have been an issue with brick directory, trying again"%self.nameInput.get_text())
+				lastBrick = lastBrick+20
+				self.gDeployFile()
+				subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
+				isRetry = True
+				totalTime = totalTime*2
+			if isRetry:
+				self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
+
 		else:
 			currentVolumeList = newEntries
 			self.notification_message("Success!", "%s has been made, in a whopping %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
@@ -1051,7 +1073,7 @@ class FortyFiveDash(App):
 			if line == "Rotation Rate:    Solid State Device":
 				driveType = "\t Type: Solid State Drive"
 			else:
-				driveType = "Hard Disk Drive\n"+line
+				driveType = "Type: Hard Disk Drive "+line
 		unsplitList.append(driveType)
 		splitList = []
 		for entry in unsplitList:
@@ -1089,7 +1111,9 @@ class FortyFiveDash(App):
 		if isSSD == True:
 			s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
 			lines = s.read().splitlines()
-			for i in range(55,73):
+			for i in range(55,155):
+				if lines[i] == '':
+					break
 				splitLine = lines[i].split()
 				if splitLine[1] == "Unknown_Attribute":
 					inte =1
@@ -1100,7 +1124,9 @@ class FortyFiveDash(App):
 		elif isSSD == False:
 			s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
 			lines = s.read().splitlines()
-			for i in range(57,70):
+			for i in range(57,155):
+				if lines[i] == '':
+					break
 				splitLine = lines[i].split()
 				if splitLine[1] == "Unknown_Attribute":
 					inte =1
