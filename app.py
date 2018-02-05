@@ -1,10 +1,7 @@
 import remi.gui as gui
 from remi import start, App
-import sys, tempfile, os
-import subprocess
-import re
-import platform, socket
-import time
+import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
+
 
 rConf = open('45dash.conf','r')
 content = rConf.readlines()
@@ -18,7 +15,7 @@ password = str(content[2]).replace("password=","").strip("\n")
 baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
 rConf.close()
 
-
+global lastBrick
 global zpoolChoice
 zpoolChoice = 'zpool'
 global createContainer
@@ -51,7 +48,9 @@ class FortyFiveDash(App):
 	def main(self):
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
-
+		global lastBrick
+		for num in range(1,1+len(self.retrieveVolumes())):
+			lastBrick = 10*num
 
 		
 		#--------------------------------------Error version------------------------------------------------------
@@ -223,6 +222,8 @@ class FortyFiveDash(App):
 		self.defaultColorPicker = gui.ColorPicker(baseColor, width='100%', height=30)
 		self.saveSettingsButton = gui.Button('Save Changes (Restart UI to apply changes)', width='100%', height=30)
 		self.saveSettingsButton.set_on_click_listener(self.changeSettings)
+		self.clearTerminalButton = gui.Button('Clear Terminal', width='100%', height=30)
+		self.clearTerminalButton.set_on_click_listener(lambda x: subprocess.call(['clear'], shell=True))
 		self.settingsContainer.append(self.settingsLabel)
 		self.settingsContainer.append(self.usernameLabel)
 		self.settingsContainer.append(self.usernameEntry)
@@ -233,6 +234,7 @@ class FortyFiveDash(App):
 		self.settingsContainer.append(self.defaultColorLabel)	
 		self.settingsContainer.append(self.defaultColorPicker)		
 		self.settingsContainer.append(self.saveSettingsButton)
+		self.settingsContainer.append(self.clearTerminalButton)
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create Configuaration----------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -572,6 +574,7 @@ class FortyFiveDash(App):
 	
 	def updateMonitorTables(self):
 		self.statusTable.empty()
+		self.statusTable.new_from_list(['Gluster Process', '', 'RDMA Port', 'Online', 'Pid'])
 		for line in self.statusTableFunction():
 			self.statusLine = gui.TableRow()
 			self.statusItem0 = gui.TableItem(line[0])
@@ -633,6 +636,8 @@ class FortyFiveDash(App):
 		conf = open('45dash.conf', 'w+')
 		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\n"%(int(newPort), newUsername, newPassword, newColor))
 		conf.close()
+
+
 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
@@ -751,6 +756,7 @@ class FortyFiveDash(App):
 		self.tuningSelection.select_by_value('Default')
 
 	def gDeployFile(self):
+		global lastBrick
 		subprocess.call(['cd ~'], shell=True)
 		f = open("deploy-cluster.conf","w+")
 		f.write(hostsConf)
@@ -767,16 +773,16 @@ class FortyFiveDash(App):
 		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
 		glusterConfig = self.glusterSelection.get_value()
 		glusterName = self.nameInput.get_text()
-		mkarbcmd = "/opt/gtools/bin/mkarb -b %s"%bricks
+		mkarbcmd = "/opt/gtools/bin/mkarb -b %d"%int(bricks)
 		for num in range(1, numHosts+1):
-			mkarbcmd = mkarbcmd + "-n %s"%(hostsInputContainer.children[num].get_text())
+			mkarbcmd = mkarbcmd + " -n %s"%(hostsInputContainer.children[num].get_text())
 		r = subprocess.Popen(mkarbcmd, shell=True, stdout=subprocess.PIPE).stdout
 		mkarb = r.read()
 		tuneProfile = self.tuningSelection.get_value()
 		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
 		if glusterConfig == 'Distributed':
 			mkarb = ""
-			for i in range(1, int(bricks)+1):
+			for i in range(lastBrick+1, int(bricks)+1+lastBrick):
 				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
 			f.write("replica_count=0\nforce=yes\n")
 			if tuneProfile == 'SMB filesharing':
@@ -789,8 +795,8 @@ class FortyFiveDash(App):
 			if tuneProfile == 'SMB filesharing':
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
 			elif tuneProfile == 'Virtualization':
-				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB")
-
+				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
+		lastBrick = len(self.retrieveVolumes())*10
 		f.close()
 
 	def createPress(self, widget):
@@ -813,9 +819,8 @@ class FortyFiveDash(App):
 					self.notification_message("Error 402", "The name %s is already in use by another gluster"%(name))
 					print "Error 402: Name in use"
 					return 0
-
-		self.notification_message("Action", "%s is in the oven, estimated time: 85.67 seconds "%self.nameInput.get_text())
-		
+		estimatedTime = random.uniform(79.4, 90.0)
+		self.notification_message("Action", "%s is in the oven, estimated time: %s seconds "%(self.nameInput.get_text(), str(round(estimatedTime, 2))))
 		entries1 = len(self.retrieveVolumes())
 		self.gDeployFile()
 		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
@@ -826,7 +831,7 @@ class FortyFiveDash(App):
 			self.notification_message("Error!", "Don't know what happened but %s couldn't be made"%self.nameInput.get_text())
 		else:
 			currentVolumeList = newEntries
-			self.notification_message("Success!", "%s has been made, in a whopping %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 3))))
+			self.notification_message("Success!", "%s has been made, in a whopping %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		if entries1 != 0:
 			self.updateVolumeLists()
 	#-----------------------------------------------Monitor Functions---------------------------------------------
