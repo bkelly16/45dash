@@ -833,7 +833,7 @@ class FortyFiveDash(App):
 			mkarb = ""
 			for i in range(int(lastBrick), int(bricks)+int(lastBrick)+1):
 				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
-				lastBrick = lastBrick + 1
+				lastBrick = int(lastBrick) + 1
 			f.write("replica_count=0\nforce=yes\n")
 			if tuneProfile == 'SMB filesharing':
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\n")
