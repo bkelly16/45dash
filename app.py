@@ -9,15 +9,20 @@ global port
 global username
 global password
 global baseColor
+global lastBrick
+
+
 port = int(str(content[0]).replace("port=","").strip("\n"))
 username = str(content[1]).replace("username=","").strip("\n")
 password = str(content[2]).replace("password=","").strip("\n")
 baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
+lastBrick = (content[4]).replace("lastBrick=",'').strip("\n")
 rConf.close()
 
+global confirmedStop
+confirmedStop = False
 global isAdvanced
 isAdvanced = False
-global lastBrick
 global zpoolChoice
 zpoolChoice = 'zpool'
 global createContainer
@@ -62,7 +67,6 @@ class FortyFiveDash(App):
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick
-		lastBrick = len(self.retrieveVolumes()) * 10
 
 		
 		#--------------------------------------Error version------------------------------------------------------
@@ -582,6 +586,8 @@ class FortyFiveDash(App):
 		return glusters
 
 	def updateVolumeLists(self):
+		global confirmedStop
+		confirmedStop = False
 		self.volumeList.empty()
 		self.activeVolumeList.empty()
 		self.drivesVolumeList.empty()
@@ -672,7 +678,7 @@ class FortyFiveDash(App):
 				self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
 				return 0
 		conf = open('45dash.conf', 'w+')
-		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\n"%(int(newPort), newUsername, newPassword, newColor))
+		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
 		conf.close() 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
@@ -723,7 +729,6 @@ class FortyFiveDash(App):
 				if char1[1] != "*":
 					count = count + 1
 		return count
-
 	#-----------------------------------------------Create functions----------------------------------------------
 	def saveHosts(self):
 		global hostsConf
@@ -826,8 +831,9 @@ class FortyFiveDash(App):
 		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
 		if glusterConfig == 'Distributed':
 			mkarb = ""
-			for i in range(lastBrick+1, int(bricks)+1+lastBrick):
+			for i in range(int(lastBrick), int(bricks)+int(lastBrick)+1):
 				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
+				lastBrick = lastBrick + 1
 			f.write("replica_count=0\nforce=yes\n")
 			if tuneProfile == 'SMB filesharing':
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\n")
@@ -840,7 +846,6 @@ class FortyFiveDash(App):
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
 			elif tuneProfile == 'Virtualization':
 				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
-		lastBrick = lastBrick + 10
 		f.close()
 
 	def createPress(self, widget):
@@ -882,11 +887,13 @@ class FortyFiveDash(App):
 				isRetry = True
 				totalTime = totalTime*2
 			if isRetry:
-				self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
-
+				if len(self.retrieveVolumes()) == newEntries:
+					self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
+				else:
+					self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		else:
 			currentVolumeList = newEntries
-			self.notification_message("Success!", "%s has been made, in a whopping %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
+			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		if entries1 != 0:
 			self.updateVolumeLists()
 	#-----------------------------------------------Monitor Functions---------------------------------------------
@@ -916,36 +923,47 @@ class FortyFiveDash(App):
 		self.updateMonitorTables()
 
 	def startGluster(self, widget):
+		self.notification_message("Action","%s will be started"%choice)
 		subprocess.call(["gluster volume start %s"%choice], shell=True)
-		self.notification_message("Success", "Gluster Volume %s has been started"%choice)
 		numActVol = self.getNumActVolumes()
 		numVol = len(self.retrieveVolumes())
 		self.updateMonitorTables()
 		self.updateVolumeLists()
 		self.numActVolumes2.set_text((str(numActVol)))
 		self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
-
+		self.notification_message("Success", "%s has been started"%choice)
+	
 	def stopGluster(self, widget):
-		initialStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
-		if initialStatus == 'started':
-			subprocess.call(["echo 'y' | gluster volume stop %s"%(choice)], shell=True)
-			
-			currentStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
-			if currentStatus == 'stopped':
-				self.notification_message("Success", "Gluster Volume %s has been stopped"%choice)
-				self.updateVolumeLists()
-				self.updateMonitorTables()
-				numActVol = self.getNumActVolumes()
-				numVol = len(self.retrieveVolumes())
-				self.numActVolumes2.set_text((str(numActVol)))
-				self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
-			if currentStatus != 'stopped':
-				self.notificaiotn_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
-		else:
-			self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
-		
+		global confirmedStop
+		confirmedStop = True
+		print confirmedStop
+		if confirmedStop == True:
+			self.notification_message("Action","%s will be stopped, this may take a few seconds"%choice)
+			initialStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
+			if initialStatus == 'started':
+				subprocess.call(["echo 'y' | gluster volume stop %s"%(choice)], shell=True)
+				currentStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
+				if currentStatus == 'stopped':
+					self.updateVolumeLists()
+					self.updateMonitorTables()
+					numActVol = self.getNumActVolumes()
+					numVol = len(self.retrieveVolumes())
+					self.numActVolumes2.set_text((str(numActVol)))
+					self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
+					self.notification_message("Success", "Gluster Volume %s has been stopped"%choice)
+				if currentStatus != 'stopped':
+					self.notificaiotn_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
+			else:
+				self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
+			confirmedStop == False
+
+		elif confirmedStop == False:
+			self.notification_message("Warning!","Deleting a gluster will make its data inaccesible, press again to confirm")
+			confirmedStop == True
+	
 	def deleteGluster(self, widget):
 		global choice
+		self.notification_message("Action","%s will be deleted, this may take a few seconds"%choice)
 		numVol = len(self.retrieveVolumes())
 		if numVol == 1:
 			self.notification_message("Error 403", "Last present gluster, ending will cause dashboard to fail")
@@ -956,14 +974,14 @@ class FortyFiveDash(App):
 		if numVol2 == numVol:
 			self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
 			return 0
-		self.notification_message("", "Gluster Volume %s has been deleted"%choice)
 		choice = self.retrieveVolumes()[0]
 		numActVol = self.getNumActVolumes()
 		self.updateMonitorTables()
 		self.numActVolumes2.set_text((str(numActVol)))
 		self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))	
 		self.updateVolumeLists()
-
+		self.notification_message("Success", "Gluster Volume %s has been deleted"%choice)
+	
 	def statusTableFunction(self):
 		status = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 		if status == "started":
@@ -994,8 +1012,6 @@ class FortyFiveDash(App):
 		else:
 			blankList = [('Volume is not started','','','','','','')]
 			return blankList
-
-
 	#------------------------------------------------Drives--------------------------------------------
 	def driveVolumeListSelected(self, widget, selection):
 		global choice
