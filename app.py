@@ -2,7 +2,7 @@ import remi.gui as gui
 from remi import start, App
 import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
 
-
+#------------------------------------------------------------------------------------------------------------------
 rConf = open('45dash.conf','r')
 content = rConf.readlines()
 global port
@@ -10,14 +10,30 @@ global username
 global password
 global baseColor
 global lastBrick
-
-
 port = int(str(content[0]).replace("port=","").strip("\n"))
 username = str(content[1]).replace("username=","").strip("\n")
 password = str(content[2]).replace("password=","").strip("\n")
 baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
 lastBrick = (content[4]).replace("lastBrick=",'').strip("\n")
 rConf.close()
+global numConnectedHosts
+global connectedHosts
+etcHosts = open('/etc/hosts')
+numConnectedHosts = -2
+connectedHosts = []
+for line in etcHosts:
+	numConnectedHosts = numConnectedHosts + 1
+	connectedHosts.append(line)
+del connectedHosts[0]
+del connectedHosts[0]
+connectedHostNames = []
+for entry in connectedHosts:
+	host = re.split("\t", entry)
+	connectedHostNames.append(host[1].strip('\n'))
+
+etcHosts.close()
+
+
 
 global confirmedStop
 confirmedStop = False
@@ -79,7 +95,7 @@ class FortyFiveDash(App):
 			self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
 			self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
 			self.hostsInputDropDown.append("")
-			for number in range(2,25):
+			for number in range(2,numConnectedHosts+1):
 				self.hostsInputDropDown.append(str(number))
 			self.hostsInputDropDown.select_by_value("")
 			self.hostsInputDropDown.set_on_change_listener(self.hostsInputDropDownFunction)
@@ -261,7 +277,8 @@ class FortyFiveDash(App):
 		self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
 		self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
 		self.hostsInputDropDown.append("")
-		for number in range(2,25):
+		print numConnectedHosts
+		for number in range(2,numConnectedHosts+1):
 			self.hostsInputDropDown.append(str(number))
 		self.hostsInputDropDown.select_by_value("")
 		self.hostsInputDropDown.set_on_change_listener(self.hostsInputDropDownFunction)
@@ -741,7 +758,14 @@ class FortyFiveDash(App):
 					self.notification_message('Error!', "You can't use special characters (%s) in server name"%(char))
 					hostsConf = 401
 					return 0
-
+		""""etcHosts = open('/etc/hosts','w+')
+		etcHosts.write('127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n')
+		etcHosts.write('::1         localhost localhost.localdomain localhost6 localhost6.localdomain6df\n')
+		for entry in hosts:
+			print entry
+			tempIP = socket.gethostbyname(entry)
+			etcHosts.write("%s\t%s"%(tempIP, entry))
+		etcHosts.close()"""
 		hostsConf = "[hosts]\n"
 		for entry in hosts:
 			hostsConf = hostsConf + "%s\n"%entry
@@ -763,7 +787,7 @@ class FortyFiveDash(App):
 			if num == 1:
 				self.hostInput.set_text(localHost)
 			else:
-				self.hostInput.set_text('gluster%d'%num)
+				self.hostInput.set_text(connectedHostNames[num-1])
 			hostsList[num] = (self.hostInput.get_text())
 			hostsInputContainer.append(self.hostInput, num)
 		createHostsContainer.append(hostsInputContainer)
