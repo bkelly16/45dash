@@ -183,7 +183,8 @@ class FortyFiveDash(App):
 		"""
 		if len(self.retrieveVolumes()) == 0:
 			noVolumes = True
-
+		else:
+			noVolumes = False
 		global brick
 		brick = str(self.driveMapTable()[1][0]).strip('*')
 		global choice
@@ -329,7 +330,6 @@ class FortyFiveDash(App):
 		self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
 		self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
 		self.hostsInputDropDown.append("")
-		print numConnectedHosts
 		for number in range(2,numConnectedHosts+1):
 			self.hostsInputDropDown.append(str(number))
 		self.hostsInputDropDown.select_by_value("")
@@ -337,6 +337,7 @@ class FortyFiveDash(App):
 		createHostsContainer.append(self.hostsLabel)
 		createHostsContainer.append(self.hostsInputLabel)
 		createHostsContainer.append(self.hostsInputDropDown)
+
 		#--------------------------------------Gluster details----------------------------------------------------
 		self.glusterDetailsContainer = gui.Widget(width='40%', height=300,  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
 		self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
@@ -645,6 +646,7 @@ class FortyFiveDash(App):
 		createContainer.append(createHostsContainer)
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
 		self.advancedContainer = gui.Widget(width='100%', height=150, style={'display':'block', 'overflow':'auto'})
+		createHostsContainer.append(hostsInputContainer)
 		createContainer.append(self.glusterDetailsContainer)
 		#--------------------------------------Create Zpool menu--------------------------------------------------
 		createZpoolContainer.append(self.zpoolDetailsContainer)
@@ -860,6 +862,7 @@ class FortyFiveDash(App):
 		global numHosts
 		numHosts = int(selection)
 		for num in range(1,numHosts+1):
+			print num
 			if num % 2 == 1:
 				self.hostInput = gui.TextInput(width='50%', key=num, height=30, style={'float':'left'})
 			if num % 2 == 0:
@@ -869,6 +872,7 @@ class FortyFiveDash(App):
 			else:
 				self.hostInput.set_text(connectedHostNames[num-1])
 			hostsList[num] = (self.hostInput.get_text())
+			print hostsList[num]
 			hostsInputContainer.append(self.hostInput, num)
 		createHostsContainer.append(hostsInputContainer)
 
