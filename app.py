@@ -5,6 +5,8 @@ import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('45dash.conf','r')
 content = rConf.readlines()
+global noVolumes
+noVolumes = False
 global port
 global username
 global password
@@ -75,10 +77,9 @@ class FortyFiveDash(App):
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick
-
-		
+	
 		#--------------------------------------Error version------------------------------------------------------
-		if len(self.retrieveVolumes()) == 0:
+		"""if len(self.retrieveVolumes()) == 0:
 			global createContainer
 			global createHostsContainer
 			self.errorContainer = gui.Widget(width='40%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
@@ -179,14 +180,21 @@ class FortyFiveDash(App):
 			self.zpoolDetailsContainer.append(self.zpoolCreateButton)
 			self.errorContainer.append(self.zpoolDetailsContainer)
 			return self.errorContainer
+		"""
+		if len(self.retrieveVolumes()) == 0:
+			noVolumes = True
+
 		global brick
 		brick = str(self.driveMapTable()[1][0]).strip('*')
 		global choice
 		i = 0
-		choice = str(self.retrieveVolumes()[i])
-		while self.infoTableFunction(choice)[3][1].strip(" ").lower() != 'started':
-			i = i + 1
+		if noVolumes == True:
+			choice = 'all'
+		elif noVolumes == False:
 			choice = str(self.retrieveVolumes()[i])
+			while self.infoTableFunction(choice)[3][1].strip(" ").lower() != 'started':
+				i = i + 1
+				choice = str(self.retrieveVolumes()[i])
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Main Menu Configuration -------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -438,15 +446,21 @@ class FortyFiveDash(App):
 		self.monitorInfoContainer = gui.Widget(width='49%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.infoLabel = gui.Label('Volume Info', width='100%', height=30)
 		self.infoTable = gui.Table(width='100%',style={'text-align':'left'})
-		for line in self.infoTableFunction(choice):
+		if noVolumes == True:
 			self.infoLine = gui.TableRow()
-			self.infoItem0 = gui.TableItem(line[0])
-			self.infoItem1 = gui.TableItem(line[1])
-			self.infoItem2 = gui.TableItem(line[2])
+			self.infoItem0 = gui.TableItem('No Volumes are present')
 			self.infoLine.append(self.infoItem0)
-			self.infoLine.append(self.infoItem1)
-			self.infoLine.append(self.infoItem2)
 			self.infoTable.append(self.infoLine)
+		elif noVolumes == False:	
+			for line in self.infoTableFunction(choice):
+				self.infoLine = gui.TableRow()
+				self.infoItem0 = gui.TableItem(line[0])
+				self.infoItem1 = gui.TableItem(line[1])
+				self.infoItem2 = gui.TableItem(line[2])
+				self.infoLine.append(self.infoItem0)
+				self.infoLine.append(self.infoItem1)
+				self.infoLine.append(self.infoItem2)
+				self.infoTable.append(self.infoLine)
 		self.monitorInfoContainer.append(self.infoLabel)
 		self.monitorInfoContainer.append(self.infoTable)
 		#--------------------------------------Volume Status Table-----------------------------------------------
@@ -467,23 +481,29 @@ class FortyFiveDash(App):
 		self.statusTableTitle.append(self.statusTableTitle4)
 		self.statusTableTitle.append(self.statusTableTitle5)
 		self.statusTable.append(self.statusTableTitle)
-		for line in self.statusTableFunction():
-			self.statusLine = gui.TableRow()
-			self.statusItem0 = gui.TableItem(line[0])
-			self.statusItem1 = gui.TableItem(line[1])
-			self.statusItem2 = gui.TableItem(line[2])
-			self.statusItem3 = gui.TableItem(line[3])
-			self.statusItem4 = gui.TableItem(line[4])
-			self.statusItem5 = gui.TableItem(line[5])
-			self.statusItem6 = gui.TableItem(line[6])
-			self.statusLine.append(self.statusItem0)
-			self.statusLine.append(self.statusItem1)
-			self.statusLine.append(self.statusItem2)
-			self.statusLine.append(self.statusItem3)
-			self.statusLine.append(self.statusItem4)
-			self.statusLine.append(self.statusItem5)
-			self.statusLine.append(self.statusItem6)
-			self.statusTable.append(self.statusLine)
+		if noVolumes == True:
+			self.StatusLine = gui.TableRow()
+			self.StatusItem0 = gui.TableItem('No Volumes are present')
+			self.StatusLine.append(self.StatusItem0)
+			self.statusTable.append(self.StatusLine)
+		elif noVolumes == False:	
+			for line in self.statusTableFunction():
+				self.statusLine = gui.TableRow()
+				self.statusItem0 = gui.TableItem(line[0])
+				self.statusItem1 = gui.TableItem(line[1])
+				self.statusItem2 = gui.TableItem(line[2])
+				self.statusItem3 = gui.TableItem(line[3])
+				self.statusItem4 = gui.TableItem(line[4])
+				self.statusItem5 = gui.TableItem(line[5])
+				self.statusItem6 = gui.TableItem(line[6])
+				self.statusLine.append(self.statusItem0)
+				self.statusLine.append(self.statusItem1)
+				self.statusLine.append(self.statusItem2)
+				self.statusLine.append(self.statusItem3)
+				self.statusLine.append(self.statusItem4)
+				self.statusLine.append(self.statusItem5)
+				self.statusLine.append(self.statusItem6)
+				self.statusTable.append(self.statusLine)
 		self.monitorStatusContainer.append(self.statusLabel)
 		self.monitorStatusContainer.append(self.statusTable)
 		#_________________________________________________________________________________________________________
@@ -985,20 +1005,24 @@ class FortyFiveDash(App):
 		subprocess.call(['zcreate -d %s -l %s -n %s -v %s -b'%(self.zpoolBrickSelection.get_value(), self.zpoolRaidSelection.get_value().lower(),self.zpoolNameInput.get_text(),self.zpoolVDevSelection.get_value())], shell=True)
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def infoTableFunction(self, choice):
-		r = subprocess.Popen(['gluster volume info %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
-		lines = r.read().splitlines()
-		results = []
-		for line in lines:
-			splitText = re.split(r':', line)
-			while len(splitText) < 3:
-				splitText.append("")
-			results.append(splitText)
-		entries = []
-		for entry in results:
-			tupleEntry = tuple(entry)
-			entries.append(tupleEntry)
-		del entries[0]
-		return entries
+		if noVolumes == True:
+			print 'No Volumes'
+			return 'No Volumes'
+		elif noVolumes == False:
+			r = subprocess.Popen(['gluster volume info %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
+			lines = r.read().splitlines()
+			results = []
+			for line in lines:
+				splitText = re.split(r':', line)
+				while len(splitText) < 3:
+					splitText.append("")
+				results.append(splitText)
+			entries = []
+			for entry in results:
+				tupleEntry = tuple(entry)
+				entries.append(tupleEntry)
+			del entries[0]
+			return entries
 
 	def monitorVolumesListSelected(self, widget, selection):
 		global choice
