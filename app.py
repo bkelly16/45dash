@@ -304,8 +304,10 @@ class FortyFiveDash(App):
 		self.enableCtdbButton.set_on_click_listener(self.ctdbFile)
 		self.numGaneshaIPLabel = gui.Label('IPs for NFS Ganesha', width='70%', height=30, style={'float':'left'})
 		self.numGaneshaIPDropDown = gui.DropDown(width='30%', height=30)
+		self.numGaneshaIPDropDown.append(' ')
 		for num in range(2,51):
 			self.numGaneshaIPDropDown.append(str(num))
+		self.numGaneshaIPDropDown.select_by_value(' ')
 		self.numGaneshaIPDropDown.set_on_change_listener(self.numGaneshaIPDropDownSelected)
 		self.enableGaneshaButton = gui.Button('Enable NFS Ganesha',width='100%', height=30)
 		self.enableGaneshaButton.set_on_click_listener(self.nfsFile)
@@ -885,7 +887,6 @@ class FortyFiveDash(App):
 		elif not isAdvanced:
 			f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
 		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n")
-		f.write(ctdbText)
 		f.write("[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
 		f.write(nfsText)
 		glusterConfig = self.glusterSelection.get_value()
@@ -914,7 +915,7 @@ class FortyFiveDash(App):
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
 			elif tuneProfile == 'Virtualization':
 				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
-
+		f.write(ctdbText)
 		f.close()
 
 	def createPress(self, widget):
@@ -985,7 +986,7 @@ class FortyFiveDash(App):
 			self.notification_message('Action', 'CTDB disabled')
 			self.enableCtdbButton.set_text('Enable CTDB')
 			ctdbEnabled = False
-			ctdbText = ''
+			ctdbText = ' '
 		elif ctdbEnabled == False:
 			ctdbEnabled = True
 			self.notification_message('Action', 'CTDB Enabled')
@@ -998,7 +999,8 @@ class FortyFiveDash(App):
 				results.append(splitText)
 			deviceType = results[1][3]
 			publicIP = self.publicIPEntry.get_text()
-			ctdbText = "[ctdb]\naction=setup\npublic_address=%s %s\nctdb_nodes="%(publicIP, deviceType)
+			ctdbText = "[volume2]\naction=create\nvolname=ctdb\nreplica_count=%s\nforce=yes\nbrick_dirs=/zpool/ctdb/brick\nignore_errors=no\n\n"%(numConnectedHosts)
+			ctdbText = ctdbText + "[ctdb]\naction=setup\npublic_address=%s %s\nctdb_nodes="%(publicIP, deviceType)
 			for entry in connectedHostNames:
 				ctdbText=ctdbText+socket.gethostbyname(entry)+','
 			ctdbText = ctdbText+"\nvolname=ctdb\n\n[script4]\naction=execute\nfile=/opt/gtools/bin/ctdb-config-d /gluster/lock -g -m smb -w"
@@ -1030,7 +1032,7 @@ class FortyFiveDash(App):
 			self.notification_message('Action','NFS Ganesha Disabled')
 			self.enableGaneshaButton.set_text('Enable NFS Ganesha')
 			nfsEnabled = False
-			nfsText = ''
+			nfsText = ' '
 		elif nfsEnabled == False:
 			nfsEnabled = True
 			self.notification_message('Action','NFS Ganesha Enabled')
