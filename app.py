@@ -9,6 +9,10 @@ global noVolumes
 noVolumes = False
 global noZpools
 noZpools = False
+global ctdbEnabled
+ctdbEnabled = False
+global nfsEnabled
+nfsEnabled = False
 global port
 global username
 global password
@@ -226,7 +230,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Host inputs--------------------------------------------------------
 		global createHostsContainer
-		createHostsContainer = gui.Widget(width='40%', height=300, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
+		createHostsContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.hostsLabel = gui.Label('Hosts Configuration',width='100%', height=30)
 		self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
 		self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
@@ -240,7 +244,8 @@ class FortyFiveDash(App):
 		createHostsContainer.append(self.hostsInputDropDown)
 
 		#--------------------------------------Gluster details----------------------------------------------------
-		self.glusterDetailsContainer = gui.Widget(width='40%', height=300,  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
+		self.glusterDetailsContainer = gui.Widget(width='30%', height=600,  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.glusterDetailsLabel = gui.Label('Gluster Details', height=30, width='100%', style={'float':'center'})
 		self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
 		self.nameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.nameInput.set_text('NewVolume')
@@ -270,6 +275,7 @@ class FortyFiveDash(App):
 		self.tuningSelectionLabel = gui.Label('Select tuning profile', width='70%', height=30, style={'float':'left'})
 		self.tuningSelection = gui.DropDown.new_from_list(('SMB filesharing','Virtualization'), width='30%', height=30, style={'float':'right'})
 		self.tuningSelection.select_by_value('SMB filesharing')
+		self.glusterDetailsContainer.append(self.glusterDetailsLabel)
 		self.glusterDetailsContainer.append(self.nameLabel)
 		self.glusterDetailsContainer.append(self.nameInput)
 		self.glusterDetailsContainer.append(self.raidLabel)
@@ -287,11 +293,34 @@ class FortyFiveDash(App):
 		self.glusterDetailsContainer.append(self.advancedCheckButton)
 		self.glusterDetailsContainer.append(self.resetButton)
 		self.glusterDetailsContainer.append(self.createButton)
-
+		#--------------------------------------Sharing protocols--------------------------------------------------
+		self.sharingContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.GaneshaiHostContainer = gui.Widget(width='100%')
+		self.sharingLabel = gui.Label('Sharing Protocols', width='100%', height=30, style={'float':'center'})
+		self.publicIPLabel = gui.Label('Enter Public IP:', width='70%', height=30, style={'float':'left'})
+		self.publicIPEntry = gui.TextInput(width='30%', height=30, style={'float':'left'})
+		self.publicIPEntry.set_text("192.168.16.16/16")
+		self.enableCtdbButton = gui.Button('Enable CTDB', width='100%', height=30, style={'float':'center'})
+		self.enableCtdbButton.set_on_click_listener(self.ctdbFile)
+		self.numGaneshaIPLabel = gui.Label('IPs for NFS Ganesha', width='70%', height=30, style={'float':'left'})
+		self.numGaneshaIPDropDown = gui.DropDown(width='30%', height=30)
+		for num in range(2,51):
+			self.numGaneshaIPDropDown.append(str(num))
+		self.numGaneshaIPDropDown.set_on_change_listener(self.numGaneshaIPDropDownSelected)
+		self.enableGaneshaButton = gui.Button('Enable NFS Ganesha',width='100%', height=30)
+		self.enableGaneshaButton.set_on_click_listener(self.nfsFile)
+		self.sharingContainer.append(self.sharingLabel)
+		self.sharingContainer.append(self.publicIPLabel)
+		self.sharingContainer.append(self.publicIPEntry)
+		self.sharingContainer.append(self.enableCtdbButton)
+		self.sharingContainer.append(self.numGaneshaIPLabel)
+		self.sharingContainer.append(self.numGaneshaIPDropDown)
+		self.sharingContainer.append(self.GaneshaiHostContainer)
+		self.sharingContainer.append(self.enableGaneshaButton)
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create - Zpool ----------------------------------------------------
 		#_________________________________________________________________________________________________________
-		self.zpoolDetailsContainer = gui.Widget(width='40%', height='100%',  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
+		self.zpoolDetailsContainer = gui.Widget(width='30%', height='100%',  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
 		self.zpoolNameLabel = gui.Label('Name of new zpool:', width='70%', height=30, style={'float':'left'})
 		self.zpoolNameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.zpoolNameInput.set_text('zpool')
@@ -568,6 +597,7 @@ class FortyFiveDash(App):
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
 		self.advancedContainer = gui.Widget(width='100%', height=150, style={'display':'block', 'overflow':'auto'})
 		createContainer.append(self.glusterDetailsContainer)
+		createContainer.append(self.sharingContainer)
 		#--------------------------------------Create Zpool menu--------------------------------------------------
 		createZpoolContainer.append(self.zpoolDetailsContainer)
 		#--------------------------------------Monitor Menu-------------------------------------------------------
@@ -775,9 +805,9 @@ class FortyFiveDash(App):
 
 	def hostsInputDropDownFunction(self, widget, selection):
 		global localHost
+		global hostsList
 		if selection == '':
 			return 0
-		global hostsList
 		hostsList = {}
 		hostsInputContainer.empty()
 		global numHosts
@@ -799,15 +829,16 @@ class FortyFiveDash(App):
 		global isAdvanced
 		isAdvanced = True
 		self.advancedContainer.empty()
-		self.ashiftLabel = gui.Label('ashift value:', width='50%', height=30, style={'float':'left'})
-		self.ashiftInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+		self.ashiftLabel = gui.Label('ashift value:', width='70%', height=30, style={'float':'left'})
+		self.ashiftInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.ashiftInput.set_text('9')
-		self.paddingLabel = gui.Label('Padding (%)', width='50%', height=30, style={'float':'left'})
-		self.paddingInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+		self.paddingLabel = gui.Label('Padding (%)', width='70%', height=30, style={'float':'left'})
+		self.paddingInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.paddingInput.set_text("95")
-		self.arbiterLabel = gui.Label('Arbiter Bricks (?)', width='50%', height=30, style={'float':'left'})
-		self.arbiterInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+		self.arbiterLabel = gui.Label('Arbiter Bricks (?)', width='70%', height=30, style={'float':'left'})
+		self.arbiterInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.arbiterInput.set_text("100G")
+
 		self.advancedContainer.append(self.ashiftLabel)
 		self.advancedContainer.append(self.ashiftInput)
 		self.advancedContainer.append(self.paddingLabel)
@@ -827,6 +858,8 @@ class FortyFiveDash(App):
 
 	def gDeployFile(self):
 		global lastBrick
+		global ctdbText
+		global nfsText
 		subprocess.call(['cd ~'], shell=True)
 		f = open("deploy-cluster.conf","w+")
 		f.write(hostsConf)
@@ -846,7 +879,10 @@ class FortyFiveDash(App):
 			f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A %s -C -b %s -p %s -fq\n"%(self.arbiterInput.get_text() ,bricks, str(self.paddingInput.get_text())))
 		elif not isAdvanced:
 			f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
-		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
+		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n")
+		f.write(ctdbText)
+		f.write("[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
+		f.write(nfsText)
 		glusterConfig = self.glusterSelection.get_value()
 		glusterName = self.nameInput.get_text()
 		mkarbcmd = "/opt/gtools/bin/mkarb -b %d"%int(bricks)
@@ -873,6 +909,7 @@ class FortyFiveDash(App):
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
 			elif tuneProfile == 'Virtualization':
 				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
+
 		f.close()
 
 	def createPress(self, widget):
@@ -898,6 +935,10 @@ class FortyFiveDash(App):
 					print "Error 402: Name in use"
 					return 0
 		estimatedTime = random.uniform(79.4, 90.0)
+		if nfsEnabled == True:
+			estimatedTime = estimatedTime + 30
+		if ctdbEnabled == True:
+			estimatedTime = estimatedTime + 30
 		self.notification_message("Action", "%s is in the oven, estimated time: %s seconds "%(self.nameInput.get_text(), str(round(estimatedTime, 2))))
 		entries1 = len(self.retrieveVolumes())
 		self.gDeployFile()
@@ -932,6 +973,70 @@ class FortyFiveDash(App):
 
 	def createZpool(self, widget):
 		subprocess.call(['zcreate -d %s -l %s -n %s -v %s -b'%(self.zpoolBrickSelection.get_value(), self.zpoolRaidSelection.get_value().lower(),self.zpoolNameInput.get_text(),self.zpoolVDevSelection.get_value())], shell=True)
+	def ctdbFile(self, widget):
+		global ctdbText
+		global ctdbEnabled
+		if ctdbEnabled == True:
+			self.notification_message('Action', 'CTDB disabled')
+			self.enableCtdbButton.set_text('Enable CTDB')
+			ctdbEnabled = False
+			ctdbText = ''
+		elif ctdbEnabled == False:
+			ctdbEnabled = True
+			self.notification_message('Action', 'CTDB Enabled')
+			self.enableCtdbButton.set_text('Disable CTDB')
+			r = subprocess.Popen(['nmcli connection show'], shell=True, stdout=subprocess.PIPE).stdout
+			lines = r.read().splitlines()
+			results = []
+			for line in lines:
+				splitText = line.split()
+				results.append(splitText)
+			deviceType = results[1][3]
+			publicIP = self.publicIPEntry.get_text()
+			ctdbText = "[ctdb]\naction=setup\npublic_address=%s %s\nctdb_nodes="%(publicIP, deviceType)
+			for entry in connectedHostNames:
+				ctdbText=ctdbText+socket.gethostbyname(entry)+','
+			ctdbText = ctdbText+"\nvolname=ctdb\n\n[script4]\naction=execute\nfile=/opt/gtools/bin/ctdb-config-d /gluster/lock -g -m smb -w"
+			print ctdbText
+
+	def numGaneshaIPDropDownSelected(self, widget, selection):
+		global numGanesha
+		global ganeshaList
+		#ganeshaList = {}
+		self.GaneshaiHostContainer.empty()
+		numGanesha = int(selection)
+		for num in range(1, numGanesha+1):
+			if num % 2 == 1:
+				self.ipInput = gui.TextInput(width='50%', height=30, style={'float':'left'})
+			if num % 2 == 0:
+				self.ipInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+			self.ipInput.set_text('192.168.16.%s'%num)
+			#ganeshaList[num] = self.ipInput.get_text()
+			self.GaneshaiHostContainer.append(self.ipInput, num)
+		ganeshaList = []
+		for num in range(1, numGanesha+1):
+			ganeshaList.append(self.GaneshaiHostContainer.children[num].get_text())
+
+	def nfsFile(self, widget):
+		global nfsText
+		global nfsEnabled
+		global ganeshaList
+		if nfsEnabled == True:
+			self.notification_message('Action','NFS Ganesha Disabled')
+			self.enableGaneshaButton.set_text('Enable NFS Ganesha')
+			nfsEnabled = False
+			nfsText = ''
+		elif nfsEnabled == False:
+			nfsEnabled = True
+			self.notification_message('Action','NFS Ganesha Enabled')
+			nfsText = "[service7]\naction=enable\nservice=corosync\nignore_errors=no\n\n[service8]\naction=start\nservice=corosync\nignore_errors=no\n\n[service9]\naction=enable\nservice=pacemaker\nignore_errors=no\n\n[service10]\naction=start\nservice=pacemaker\nignore_errors=no\n\n[service11]\naction=enable\nservice=pscd\nignore_errors=no\n\n[service12]\naction=start\nservice=pscd\nignore_errors=no\n\n[nfs-ganesha]\naction=create-cluster\nha-name=ganesha-ha-360\ncluster-nodes="
+			for entry in connectedHostNames:
+				nfsText = nfsText + entry + ','
+			nfsText = nfsText + '\nvip='
+			for entry in ganeshaList:
+				nfsText = nfsText + entry + ','
+
+
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def infoTableFunction(self, choice):
 		if noVolumes == True:
@@ -992,7 +1097,7 @@ class FortyFiveDash(App):
 					self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
 					self.notification_message("Success", "Gluster Volume %s has been stopped"%choice)
 				if currentStatus != 'stopped':
-					self.notificaiotn_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
+					self.notification_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
 			else:
 				self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
 			confirmedStop == False
