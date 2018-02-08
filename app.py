@@ -604,6 +604,7 @@ class FortyFiveDash(App):
 		mainContainer.append(self.mainTabBox)
 		return mainContainer
 
+
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Functions-----------------------------------------------------
 	def retrieveVolumes(self):
@@ -857,7 +858,7 @@ class FortyFiveDash(App):
 		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
 		if glusterConfig == 'Distributed':
 			mkarb = ""
-			for i in range(int(lastBrick), int(bricks)+int(lastBrick)+1):
+			for i in range(int(lastBrick)+1, int(bricks)+int(lastBrick)+1):
 				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
 				lastBrick = int(lastBrick) + 1
 			f.write("replica_count=0\nforce=yes\n")
@@ -922,7 +923,9 @@ class FortyFiveDash(App):
 			noVolumes = False
 			noZpools = False
 			self.updateVolumeLists()
-			self.updateMonitorTables()		
+			self.updateMonitorTables()
+			self.overviewTableUpdate()
+			self.updateZpools()		
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		if entries1 != 0:
 			self.updateVolumeLists()
@@ -1253,6 +1256,49 @@ class FortyFiveDash(App):
 			self.zpoolLine.append(self.zpoolFree)
 			self.zpoolLine.append(self.zpoolHealth)
 			self.monitorZpoolTable.append(self.zpoolLine)
+
+	def updateZpools(self):
+		self.monitorZpoolTable.empty()
+		if noZpools == True:
+			self.zpoolLine = gui.TableRow()
+			self.nozpool = gui.TableItem("No Zpools Present")
+			self.zpoolLine.append(self.nozpool)
+			self.monitorZpoolTable.append(self.zpoolLine)
+		if noZpools == False:
+			for line in self.getZpoolStats():
+				self.zpoolLine = gui.TableRow()
+				self.zpoolName = gui.TableItem(" "+line[0])
+				self.zpoolSize = gui.TableItem(line[1])
+				self.zpoolAlloc = gui.TableItem(line[2])
+				self.zpoolFree = gui.TableItem(line[3])
+				self.zpoolHealth = gui.TableItem(line[8])
+				self.zpoolLine.append(self.zpoolName)
+				self.zpoolLine.append(self.zpoolSize)
+				self.zpoolLine.append(self.zpoolAlloc)
+				self.zpoolLine.append(self.zpoolFree)
+				self.zpoolLine.append(self.zpoolHealth)
+				self.monitorZpoolTable.append(self.zpoolLine)
+		self.zpoolStatusTable.empty()
+		if noZpools == True:
+			self.noZpoolLine = gui.TableRow()
+			self.noZpoolLine1 = gui.TableItem('No Zpools Present')
+			self.noZpoolLine.append(self.noZpoolLine1)
+			self.zpoolStatusTable.append(self.noZpoolLine)
+		if noZpools == False:
+			for line in self.getZpoolStatus():
+				self.zpoolStatusLine = gui.TableRow()
+				self.zpoolStatusName = gui.TableItem(line[0])
+				self.zpoolState = gui.TableItem(line[1])
+				self.zpoolRead = gui.TableItem(line[2])
+				self.zpoolWrite = gui.TableItem(line[3])
+				self.zpoolCksum = gui.TableItem(line[4])
+				self.zpoolStatusLine.append(self.zpoolStatusName)
+				self.zpoolStatusLine.append(self.zpoolState)
+				self.zpoolStatusLine.append(self.zpoolRead)
+				self.zpoolStatusLine.append(self.zpoolWrite)
+				self.zpoolStatusLine.append(self.zpoolCksum)
+				self.zpoolStatusTable.append(self.zpoolStatusLine)
+
 
 ip = str(socket.gethostbyname(socket.gethostname()))
 
