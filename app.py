@@ -5,10 +5,11 @@ import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('45dash.conf','r')
 content = rConf.readlines()
-global noVolumes, noZpools, ctdbEnabled, nfsEnabled, nfsText, stopIsConfirmed , deleteIsConfirmed
+global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed
 noVolumes = False
 noZpools = False
 ctdbEnabled = False
+ctdbText = ''
 nfsEnabled = False
 nfsText = ''
 ganeshaList = []
