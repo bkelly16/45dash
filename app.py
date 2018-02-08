@@ -46,8 +46,6 @@ isAdvanced = False
 global zpoolChoice
 zpoolChoice = 'zpool'
 global createContainer
-global hostsInputContainer
-global createHostsContainer
 global localHost
 localHost1 = socket.gethostname()
 localHost = ''
@@ -227,6 +225,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Create Configuaration----------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Host inputs--------------------------------------------------------
+		global createHostsContainer
 		createHostsContainer = gui.Widget(width='40%', height=300, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
 		self.hostsLabel = gui.Label('Hosts Configuration',width='100%', height=30)
 		self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
@@ -518,19 +517,25 @@ class FortyFiveDash(App):
 		self.monitorZpoolStatusContainer = gui.Widget(width='45%', height=700, style={'padding':'5px', 'border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.zpoolStatusLabel = gui.Label('Zpool Status', width='100%', height=30)
 		self.zpoolStatusTable = gui.Table(width='100%')
-		for line in self.getZpoolStatus():
-			self.zpoolStatusLine = gui.TableRow()
-			self.zpoolStatusName = gui.TableItem(line[0])
-			self.zpoolState = gui.TableItem(line[1])
-			self.zpoolRead = gui.TableItem(line[2])
-			self.zpoolWrite = gui.TableItem(line[3])
-			self.zpoolCksum = gui.TableItem(line[4])
-			self.zpoolStatusLine.append(self.zpoolStatusName)
-			self.zpoolStatusLine.append(self.zpoolState)
-			self.zpoolStatusLine.append(self.zpoolRead)
-			self.zpoolStatusLine.append(self.zpoolWrite)
-			self.zpoolStatusLine.append(self.zpoolCksum)
-			self.zpoolStatusTable.append(self.zpoolStatusLine)
+		if noZpools == True:
+			self.noZpoolLine = gui.TableRow()
+			self.noZpoolLine1 = gui.TableItem('No Zpools Present')
+			self.noZpoolLine.append(self.noZpoolLine1)
+			self.zpoolStatusTable.append(self.noZpoolLine)
+		if noZpools == False:
+			for line in self.getZpoolStatus():
+				self.zpoolStatusLine = gui.TableRow()
+				self.zpoolStatusName = gui.TableItem(line[0])
+				self.zpoolState = gui.TableItem(line[1])
+				self.zpoolRead = gui.TableItem(line[2])
+				self.zpoolWrite = gui.TableItem(line[3])
+				self.zpoolCksum = gui.TableItem(line[4])
+				self.zpoolStatusLine.append(self.zpoolStatusName)
+				self.zpoolStatusLine.append(self.zpoolState)
+				self.zpoolStatusLine.append(self.zpoolRead)
+				self.zpoolStatusLine.append(self.zpoolWrite)
+				self.zpoolStatusLine.append(self.zpoolCksum)
+				self.zpoolStatusTable.append(self.zpoolStatusLine)
 		self.monitorZpoolStatusContainer.append(self.zpoolStatusLabel)
 		self.monitorZpoolStatusContainer.append(self.zpoolStatusTable)
 		#_________________________________________________________________________________________________________
@@ -538,7 +543,6 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Appending containers-----------------------------------------------
 		global hostsInputContainer
-		global createHostsContainer
 		mainContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainCreateContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
