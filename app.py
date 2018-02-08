@@ -13,6 +13,10 @@ global ctdbEnabled
 ctdbEnabled = False
 global nfsEnabled
 nfsEnabled = False
+global nfsText
+nfsText = ''
+global ganeshaList
+ganeshaList = []
 global port
 global username
 global password
@@ -920,6 +924,9 @@ class FortyFiveDash(App):
 
 	def createPress(self, widget):
 		global lastBrick
+		if int(self.brickSelection.get_value()) % int(numHosts) != 0:
+			self.notification_message("Error",'# of bricks must be a multiple of replica count')
+			return 0
 		isRetry = False
 		name = self.nameInput.get_text()
 		for char in name:
@@ -974,6 +981,27 @@ class FortyFiveDash(App):
 			self.overviewTableUpdate()
 			self.updateZpools()		
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
+			newPort = self.portEntry.get_text()
+			newUsername = self.usernameEntry.get_text()
+			newPassword = self.passwordEntry.get_text()
+			newColor = self.defaultColorPicker.get_value()
+			if newPort > 8099 or newPort < 8000:
+				print "Error 404: Port ID must only be between 8000 and 8099"
+				self.notification_message("Error 404", "Port ID must only be between 8000 and 8099")
+				return 0
+			for char in newUsername:
+				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
+					print 'Error 405: Username must be alphanumeric'
+					self.notification_message('Error 405', "You can't use special characters (%s) in username"%(char))
+					return 0
+			for char in newPassword:
+				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
+					print 'Error 406: Password must be alphanumeric'
+					self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
+					return 0
+			conf = open('45dash.conf', 'w+')
+			conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
+			conf.close() 
 		if entries1 != 0:
 			self.updateVolumeLists()
 
@@ -999,7 +1027,7 @@ class FortyFiveDash(App):
 				results.append(splitText)
 			deviceType = results[1][3]
 			publicIP = self.publicIPEntry.get_text()
-			ctdbText = "[volume2]\naction=create\nvolname=ctdb\nreplica_count=%s\nforce=yes\nbrick_dirs=/zpool/ctdb/brick\nignore_errors=no\n\n"%(numConnectedHosts)
+			ctdbText = "\n\n[volume2]\naction=create\nvolname=ctdb\nreplica_count=%s\nforce=yes\nbrick_dirs=/zpool/ctdb/brick\nignore_errors=no\n\n"%(numHosts)
 			ctdbText = ctdbText + "[ctdb]\naction=setup\npublic_address=%s %s\nctdb_nodes="%(publicIP, deviceType)
 			for entry in connectedHostNames:
 				ctdbText=ctdbText+socket.gethostbyname(entry)+','
@@ -1028,6 +1056,9 @@ class FortyFiveDash(App):
 		global nfsText
 		global nfsEnabled
 		global ganeshaList
+		if ganeshaList == []:
+			self.notification_message('Error','Input valid IPs')
+			return 0
 		if nfsEnabled == True:
 			self.notification_message('Action','NFS Ganesha Disabled')
 			self.enableGaneshaButton.set_text('Enable NFS Ganesha')
@@ -1036,13 +1067,13 @@ class FortyFiveDash(App):
 		elif nfsEnabled == False:
 			nfsEnabled = True
 			self.notification_message('Action','NFS Ganesha Enabled')
-			nfsText = "[service7]\naction=enable\nservice=corosync\nignore_errors=no\n\n[service8]\naction=start\nservice=corosync\nignore_errors=no\n\n[service9]\naction=enable\nservice=pacemaker\nignore_errors=no\n\n[service10]\naction=start\nservice=pacemaker\nignore_errors=no\n\n[service11]\naction=enable\nservice=pscd\nignore_errors=no\n\n[service12]\naction=start\nservice=pscd\nignore_errors=no\n\n[nfs-ganesha]\naction=create-cluster\nha-name=ganesha-ha-360\ncluster-nodes="
+			nfsText = "\n\n[service7]\naction=enable\nservice=corosync\nignore_errors=no\n\n[service8]\naction=start\nservice=corosync\nignore_errors=no\n\n[service9]\naction=enable\nservice=pacemaker\nignore_errors=no\n\n[service10]\naction=start\nservice=pacemaker\nignore_errors=no\n\n[service11]\naction=enable\nservice=pscd\nignore_errors=no\n\n[service12]\naction=start\nservice=pscd\nignore_errors=no\n\n[nfs-ganesha]\naction=create-cluster\nha-name=ganesha-ha-360\ncluster-nodes="
 			for entry in connectedHostNames:
 				nfsText = nfsText + entry + ','
 			nfsText = nfsText + '\nvip='
 			for entry in ganeshaList:
 				nfsText = nfsText + entry + ','
-
+		print nfsText
 
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def infoTableFunction(self, choice):
