@@ -7,6 +7,8 @@ rConf = open('45dash.conf','r')
 content = rConf.readlines()
 global noVolumes
 noVolumes = False
+global noZpools
+noZpools = False
 global port
 global username
 global password
@@ -45,9 +47,7 @@ global zpoolChoice
 zpoolChoice = 'zpool'
 global createContainer
 global hostsInputContainer
-hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
 global createHostsContainer
-createHostsContainer = gui.Widget(width='100%', height=300, style={'padding':'5px','border':'0px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 global localHost
 localHost1 = socket.gethostname()
 localHost = ''
@@ -79,112 +79,14 @@ class FortyFiveDash(App):
 		global lastBrick
 	
 		#--------------------------------------Error version------------------------------------------------------
-		"""if len(self.retrieveVolumes()) == 0:
-			global createContainer
-			global createHostsContainer
-			self.errorContainer = gui.Widget(width='40%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
-			createHostsContainer = gui.Widget(width='100%', height=300, style={'padding':'5px','border':'0px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
-			self.hostsLabel = gui.Label('Hosts Configuration',width='100%', height=30)
-			self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
-			self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
-			self.hostsInputDropDown.append("")
-			for number in range(2,numConnectedHosts+1):
-				self.hostsInputDropDown.append(str(number))
-			self.hostsInputDropDown.select_by_value("")
-			self.hostsInputDropDown.set_on_change_listener(self.hostsInputDropDownFunction)
-			createHostsContainer.append(self.hostsLabel)
-			createHostsContainer.append(self.hostsInputLabel)
-			createHostsContainer.append(self.hostsInputDropDown)
-			hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
-
-			#--------------------------------------Gluster details----------------------------------------------------
-			
-			self.glusterDetailsContainer = gui.Widget(width='100%', height=400,  style={'padding':'5px','border':'0px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
-			self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
-			self.nameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
-			self.nameInput.set_text('NewVolume')
-			self.raidLabel = gui.Label('Select RAID Level (Z2 recommended)', width='70%', height=30, style={'float':'left'})
-			self.raidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3'), width='30%', height=30, style={'float':'right'})
-			self.raidSelection.select_by_value('RAIDZ2')
-			self.vDevLabel = gui.Label('Select # of VDevs', width='70%', height=30, style={'float':'left'})
-			self.vDevSelection = gui.DropDown.new_from_list(('2','3','4','5','6'), width='30%', height=30, style={'float':'right'})
-			self.vDevSelection.select_by_value('3')
-			self.brickLabel = gui.Label('Select # of bricks for ZFS pool', width='70%', height=30, style={'float':'left'})
-			self.brickSelection = gui.DropDown.new_from_list(('2','3','4','5','6','7','8'), width='30%', height=30, style={'float':'right'})
-			self.brickSelection.select_by_value('8')
-			self.advancedCheckButton = gui.Button('Show advanced options', width='100%', height=30, style={'float':'left'})
-			self.advancedCheckButton.set_on_click_listener(self.showAdvanced)
-			self.resetButton = gui.Button('Reset to defaults', width='100%', height=30)
-			self.resetButton.set_on_click_listener(self.reset)
-			self.createButton = gui.Button('Create new gluster', width='100%', height=30, style={'float':'left'})
-			self.createButton.set_on_click_listener(self.createPress)
-			self.glusterLabel = gui.Label('Select Gluster Configuation', width='70%', height=30, style={'float':'left'})
-			self.glusterSelection=gui.DropDown.new_from_list(('Distributed','Distributed Replicated'), width='30%', height=30, style={'float':'right'})
-			self.glusterSelection.select_by_value('Distributed')
-			self.tuningSelectionLabel = gui.Label('Select tuning profile', width='70%', height=30, style={'float':'left'})
-			self.tuningSelection = gui.DropDown.new_from_list(('Default','SMB filesharing','Virtualization'), width='30%', height=30, style={'float':'right'})
-			self.tuningSelection.select_by_value('Default')
-			self.glusterDetailsContainer.append(self.nameLabel)
-			self.glusterDetailsContainer.append(self.nameInput)
-			self.glusterDetailsContainer.append(self.raidLabel)
-			self.glusterDetailsContainer.append(self.raidSelection)
-			self.glusterDetailsContainer.append(self.vDevLabel)
-			self.glusterDetailsContainer.append(self.vDevSelection)
-			self.glusterDetailsContainer.append(self.brickLabel)
-			self.glusterDetailsContainer.append(self.brickSelection)
-			self.glusterDetailsContainer.append(self.glusterLabel)
-			self.glusterDetailsContainer.append(self.glusterSelection)
-			self.glusterDetailsContainer.append(self.tuningSelectionLabel)
-			self.glusterDetailsContainer.append(self.tuningSelection)
-			self.glusterDetailsContainer.append(self.advancedCheckButton)
-			self.glusterDetailsContainer.append(self.resetButton)
-			self.glusterDetailsContainer.append(self.createButton)
-			self.warningLabel = gui.Label('Warning! No glusters found, make one here and relaunch the app')
-			self.errorContainer.append(self.warningLabel)
-			self.errorContainer.append(createHostsContainer)
-			self.errorContainer.append(self.glusterDetailsContainer)
-			createHostsContainer = gui.Widget(width='40%', height=300, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
-			self.zpoolDetailsContainer = gui.Widget(width='40%', height='100%',  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
-			self.zpoolNameLabel = gui.Label('Name of new zpool:', width='70%', height=30, style={'float':'left'})
-			self.zpoolNameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
-			self.zpoolNameInput.set_text('zpool')
-			self.zpoolRaidLabel = gui.Label('Select RAID Level', width='70%', height=30, style={'float':'left'})
-			self.zpoolRaidSelection = gui.DropDown.new_from_list(('RAIDZ1', 'RAIDZ2', 'RAIDZ3','mirror','stripe'), width='30%', height=30, style={'float':'right'})
-			self.zpoolRaidSelection.select_by_value('RAIDZ2')
-			self.zpoolVDevLabel = gui.Label('Select # of VDevs', width='70%', height=30, style={'float':'left'})
-			self.zpoolVDevSelection = gui.DropDown(width='30%', height=30, style={'float':'right'})
-			for number in range(1,31):
-				self.zpoolVDevSelection.append(str(number))
-			self.zpoolVDevSelection.select_by_value('3')
-			self.zpoolBrickLabel = gui.Label('Select # of drives to use', width='70%', height=30, style={'float':'left'})
-			self.zpoolBrickSelection = gui.DropDown(width='30%', height=30, style={'float':'right'})
-			self.zpoolBrickSelection.append("")
-			for number in range(2,60):
-				self.zpoolBrickSelection.append(str(number))
-			self.zpoolBrickSelection.select_by_value('2')
-			self.zpoolAshiftLabel = gui.Label('Ashift value', width='70%', height=30, style={'float':'left'})
-			self.zpoolAshiftInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
-			self.zpoolAshiftInput.set_text('9')
-			self.zpoolCreateButton = gui.Button('Create Zpool', width='100%', height=30)
-			self.zpoolCreateButton.set_on_click_listener(self.createZpool)
-			self.zpoolDetailsContainer.append(self.zpoolNameLabel)
-			self.zpoolDetailsContainer.append(self.zpoolNameInput)
-			self.zpoolDetailsContainer.append(self.zpoolRaidLabel)
-			self.zpoolDetailsContainer.append(self.zpoolRaidSelection)
-			self.zpoolDetailsContainer.append(self.zpoolVDevLabel)
-			self.zpoolDetailsContainer.append(self.zpoolVDevSelection)
-			self.zpoolDetailsContainer.append(self.zpoolBrickLabel)
-			self.zpoolDetailsContainer.append(self.zpoolBrickSelection)
-			self.zpoolDetailsContainer.append(self.zpoolAshiftLabel)
-			self.zpoolDetailsContainer.append(self.zpoolAshiftInput)
-			self.zpoolDetailsContainer.append(self.zpoolCreateButton)
-			self.errorContainer.append(self.zpoolDetailsContainer)
-			return self.errorContainer
-		"""
 		if len(self.retrieveVolumes()) == 0:
 			noVolumes = True
 		else:
 			noVolumes = False
+		if len(self.getZpoolStats()) == 0:
+			noZpools = True
+		else:
+			noZpools = True
 		global brick
 		brick = str(self.driveMapTable()[1][0]).strip('*')
 		global choice
@@ -587,19 +489,25 @@ class FortyFiveDash(App):
 		self.monitorZpoolZpoolContainer = gui.Widget(width='35%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
 		self.monitorZpoolLabel = gui.Label('Active Zpools (Select name of zpool to view)', width='100%', height=30)
 		self.monitorZpoolTable = gui.Table(width='100%')
-		for line in self.getZpoolStats():
+		if noZpools == True:
 			self.zpoolLine = gui.TableRow()
-			self.zpoolName = gui.TableItem(" "+line[0])
-			self.zpoolSize = gui.TableItem(line[1])
-			self.zpoolAlloc = gui.TableItem(line[2])
-			self.zpoolFree = gui.TableItem(line[3])
-			self.zpoolHealth = gui.TableItem(line[8])
-			self.zpoolLine.append(self.zpoolName)
-			self.zpoolLine.append(self.zpoolSize)
-			self.zpoolLine.append(self.zpoolAlloc)
-			self.zpoolLine.append(self.zpoolFree)
-			self.zpoolLine.append(self.zpoolHealth)
+			self.nozpool = gui.TableItem("No Zpools Present")
+			self.zpoolLine.append(self.nozpool)
 			self.monitorZpoolTable.append(self.zpoolLine)
+		if noZpools == False:
+			for line in self.getZpoolStats():
+				self.zpoolLine = gui.TableRow()
+				self.zpoolName = gui.TableItem(" "+line[0])
+				self.zpoolSize = gui.TableItem(line[1])
+				self.zpoolAlloc = gui.TableItem(line[2])
+				self.zpoolFree = gui.TableItem(line[3])
+				self.zpoolHealth = gui.TableItem(line[8])
+				self.zpoolLine.append(self.zpoolName)
+				self.zpoolLine.append(self.zpoolSize)
+				self.zpoolLine.append(self.zpoolAlloc)
+				self.zpoolLine.append(self.zpoolFree)
+				self.zpoolLine.append(self.zpoolHealth)
+				self.monitorZpoolTable.append(self.zpoolLine)
 		self.monitorZpoolTable.set_on_table_row_click_listener(self.zpoolTableClicked)
 		self.deleteZpoolButton = gui.Button('Delete %s'%zpoolChoice, width='100%', height=30, style={'background-color':'#FF0000'})
 		self.deleteZpoolButton.set_on_click_listener(self.deleteZpool)
@@ -629,6 +537,8 @@ class FortyFiveDash(App):
 		#--------------------------------------Front end configuation---------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Appending containers-----------------------------------------------
+		global hostsInputContainer
+		global createHostsContainer
 		mainContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainCreateContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
@@ -646,7 +556,6 @@ class FortyFiveDash(App):
 		createContainer.append(createHostsContainer)
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
 		self.advancedContainer = gui.Widget(width='100%', height=150, style={'display':'block', 'overflow':'auto'})
-		createHostsContainer.append(hostsInputContainer)
 		createContainer.append(self.glusterDetailsContainer)
 		#--------------------------------------Create Zpool menu--------------------------------------------------
 		createZpoolContainer.append(self.zpoolDetailsContainer)
@@ -854,7 +763,7 @@ class FortyFiveDash(App):
 
 	def hostsInputDropDownFunction(self, widget, selection):
 		global localHost
-		if selection == '0':
+		if selection == '':
 			return 0
 		global hostsList
 		hostsList = {}
@@ -862,7 +771,6 @@ class FortyFiveDash(App):
 		global numHosts
 		numHosts = int(selection)
 		for num in range(1,numHosts+1):
-			print num
 			if num % 2 == 1:
 				self.hostInput = gui.TextInput(width='50%', key=num, height=30, style={'float':'left'})
 			if num % 2 == 0:
@@ -872,7 +780,6 @@ class FortyFiveDash(App):
 			else:
 				self.hostInput.set_text(connectedHostNames[num-1])
 			hostsList[num] = (self.hostInput.get_text())
-			print hostsList[num]
 			hostsInputContainer.append(self.hostInput, num)
 		createHostsContainer.append(hostsInputContainer)
 
@@ -1001,6 +908,8 @@ class FortyFiveDash(App):
 					self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		else:
 			currentVolumeList = newEntries
+			noVolumes = False
+			noZpools = False
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		if entries1 != 0:
 			self.updateVolumeLists()
