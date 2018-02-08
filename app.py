@@ -88,7 +88,7 @@ class FortyFiveDash(App):
 		if len(self.getZpoolStats()) == 0:
 			noZpools = True
 		else:
-			noZpools = True
+			noZpools = False
 		global brick
 		brick = str(self.driveMapTable()[1][0]).strip('*')
 		global choice
@@ -586,7 +586,7 @@ class FortyFiveDash(App):
 		monitorVolumeContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorDrivesContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorZpoolContainer = gui.Widget(width='100%', height='100%', style={ 'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		createContainer = gui.Widget(width='100%', height=700, style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createContainer = gui.Widget(width='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		createZpoolContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
@@ -827,25 +827,30 @@ class FortyFiveDash(App):
 
 	def showAdvanced(self, widget):
 		global isAdvanced
-		isAdvanced = True
-		self.advancedContainer.empty()
-		self.ashiftLabel = gui.Label('ashift value:', width='70%', height=30, style={'float':'left'})
-		self.ashiftInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
-		self.ashiftInput.set_text('9')
-		self.paddingLabel = gui.Label('Padding (%)', width='70%', height=30, style={'float':'left'})
-		self.paddingInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
-		self.paddingInput.set_text("95")
-		self.arbiterLabel = gui.Label('Arbiter Bricks (?)', width='70%', height=30, style={'float':'left'})
-		self.arbiterInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
-		self.arbiterInput.set_text("100G")
-
-		self.advancedContainer.append(self.ashiftLabel)
-		self.advancedContainer.append(self.ashiftInput)
-		self.advancedContainer.append(self.paddingLabel)
-		self.advancedContainer.append(self.paddingInput)
-		self.advancedContainer.append(self.arbiterLabel)
-		self.advancedContainer.append(self.arbiterInput)
-		self.glusterDetailsContainer.append(self.advancedContainer)
+		if isAdvanced == False:
+			self.advancedCheckButton.set_text('Hide Advanced Options')
+			isAdvanced = True
+			self.advancedContainer.empty()
+			self.ashiftLabel = gui.Label('ashift value:', width='70%', height=30, style={'float':'left'})
+			self.ashiftInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
+			self.ashiftInput.set_text('9')
+			self.paddingLabel = gui.Label('Padding (%)', width='70%', height=30, style={'float':'left'})
+			self.paddingInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
+			self.paddingInput.set_text("95")
+			self.arbiterLabel = gui.Label('Arbiter Bricks (?)', width='70%', height=30, style={'float':'left'})
+			self.arbiterInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
+			self.arbiterInput.set_text("100G")
+			self.advancedContainer.append(self.ashiftLabel)
+			self.advancedContainer.append(self.ashiftInput)
+			self.advancedContainer.append(self.paddingLabel)
+			self.advancedContainer.append(self.paddingInput)
+			self.advancedContainer.append(self.arbiterLabel)
+			self.advancedContainer.append(self.arbiterInput)
+			self.glusterDetailsContainer.append(self.advancedContainer)
+		elif isAdvanced == True:
+			self.advancedContainer.empty()
+			self.advancedCheckButton.set_text('Show Advanced Options')
+			isAdvanced = False
 
 	def reset(self, widget):
 		self.nameInput.set_text('NewVolume')
