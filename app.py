@@ -5,23 +5,16 @@ import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('45dash.conf','r')
 content = rConf.readlines()
-global noVolumes
+global noVolumes, noZpools, ctdbEnabled, nfsEnabled, nfsText, stopIsConfirmed , deleteIsConfirmed
 noVolumes = False
-global noZpools
 noZpools = False
-global ctdbEnabled
 ctdbEnabled = False
-global nfsEnabled
 nfsEnabled = False
-global nfsText
 nfsText = ''
-global ganeshaList
 ganeshaList = []
-global port
-global username
-global password
-global baseColor
-global lastBrick
+stopIsConfirmed = False
+deleteIsConfirmed = False
+global port, username, password, baseColor, lastBrick
 port = int(str(content[0]).replace("port=","").strip("\n"))
 username = str(content[1]).replace("username=","").strip("\n")
 password = str(content[2]).replace("password=","").strip("\n")
@@ -47,8 +40,7 @@ etcHosts.close()
 
 
 
-global confirmedStop
-confirmedStop = False
+
 global isAdvanced
 isAdvanced = False
 global zpoolChoice
@@ -510,7 +502,7 @@ class FortyFiveDash(App):
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTable)
 		#--------------------------------------Drive health box---------------------------------------------------
 		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
-		self.healthListLabel = gui.Label('Drive Health',width='100%', height=19)
+		self.healthListLabel = gui.Label('Drive Health',width='100%', height=15)
 		self.healthTable = gui.Table(width='100%',style={'text-align':'left'})
 		healthStats = self.getDriveHealth()
 		for line in healthStats:
@@ -1098,6 +1090,8 @@ class FortyFiveDash(App):
 
 	def monitorVolumesListSelected(self, widget, selection):
 		global choice
+		stopIsConfirmed = False
+		deleteIsConfirmed = False
 		choice = self.volumeList.children[selection].get_text()
 		self.stopButton.set_text("Stop %s"%choice)
 		self.startButton.set_text("Start %s"%choice)
@@ -1117,10 +1111,8 @@ class FortyFiveDash(App):
 		self.notification_message("Success", "%s has been started"%choice)
 	
 	def stopGluster(self, widget):
-		global confirmedStop
-		confirmedStop = True
-		print confirmedStop
-		if confirmedStop == True:
+		global stopIsConfirmed
+		if stopIsConfirmed == True:
 			self.notification_message("Action","%s will be stopped, this may take a few seconds"%choice)
 			initialStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 			if initialStatus == 'started':
@@ -1138,32 +1130,40 @@ class FortyFiveDash(App):
 					self.notification_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
 			else:
 				self.notification_message("Error!", "Gluster volume %s is already stopped"%choice)
-			confirmedStop == False
+			stopIsConfirmed == False
+			return 0
 
-		elif confirmedStop == False:
+		elif stopIsConfirmed == False:
 			self.notification_message("Warning!","Deleting a gluster will make its data inaccesible, press again to confirm")
-			confirmedStop == True
+			stopIsConfirmed = True
 	
 	def deleteGluster(self, widget):
 		global choice
-		self.notification_message("Action","%s will be deleted, this may take a few seconds"%choice)
-		numVol = len(self.retrieveVolumes())
-		if numVol == 1:
-			self.notification_message("Error 403", "Last present gluster, ending will cause dashboard to fail")
-			print "Error 403: Cannot delete last gluster"
-			return 403
-		subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
-		numVol2 = len(self.retrieveVolumes())
-		if numVol2 == numVol:
-			self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
+		global deleteIsConfirmed
+		if deleteIsConfirmed:
+			self.notification_message("Action","%s will be deleted, this may take a few seconds"%choice)
+			numVol = len(self.retrieveVolumes())
+			if numVol == 1:
+				self.notification_message("Error 403", "Last present gluster, ending will cause dashboard to fail")
+				print "Error 403: Cannot delete last gluster"
+				return 403
+			subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
+			numVol2 = len(self.retrieveVolumes())
+			if numVol2 == numVol:
+				self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
+				return 0
+			choice = self.retrieveVolumes()[0]
+			numActVol = self.getNumActVolumes()
+			self.updateMonitorTables()
+			self.numActVolumes2.set_text((str(numActVol)))
+			self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))	
+			self.updateVolumeLists()
+			self.notification_message("Success", "Gluster Volume %s has been deleted"%choice)
 			return 0
-		choice = self.retrieveVolumes()[0]
-		numActVol = self.getNumActVolumes()
-		self.updateMonitorTables()
-		self.numActVolumes2.set_text((str(numActVol)))
-		self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))	
-		self.updateVolumeLists()
-		self.notification_message("Success", "Gluster Volume %s has been deleted"%choice)
+		elif not deleteIsConfirmed:
+			self.notification_message("Warning", "Deleting a volume can be dangerous, press again to continue")
+			deleteIsConfirmed = True
+			return 0
 	
 	def statusTableFunction(self):
 		status = self.infoTableFunction(choice)[3][1].strip(" ").lower()
