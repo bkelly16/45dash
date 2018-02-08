@@ -924,7 +924,7 @@ class FortyFiveDash(App):
 
 	def createPress(self, widget):
 		global lastBrick
-		if int(self.brickSelection.get_value()) % int(numHosts) != 0:
+		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
 			return 0
 		isRetry = False
