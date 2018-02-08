@@ -253,6 +253,11 @@ class FortyFiveDash(App):
 		self.brickLabel = gui.Label('Select # of bricks for ZFS pool', width='70%', height=30, style={'float':'left'})
 		self.brickSelection = gui.DropDown.new_from_list(('2','3','4','5','6','7','8','9','10'), width='30%', height=30, style={'float':'right'})
 		self.brickSelection.select_by_value('8')
+		self.driveSelectionLabel = gui.Label('Select # of drives for gluster', width='70%', height=30, style={'float':'left'})
+		self.driveSelection = gui.DropDown(width='30%', height=30, style={'float':'right'})
+		for number in range(2, len(self.driveMapTable())):
+			self.driveSelection.append(str(number))
+		self.driveSelection.select_by_value(len(self.driveMapTable())-1)
 		self.advancedCheckButton = gui.Button('Show advanced options', width='100%', height=30, style={'float':'left'})
 		self.advancedCheckButton.set_on_click_listener(self.showAdvanced)
 		self.resetButton = gui.Button('Reset to defaults', width='100%', height=30)
@@ -273,6 +278,8 @@ class FortyFiveDash(App):
 		self.glusterDetailsContainer.append(self.vDevSelection)
 		self.glusterDetailsContainer.append(self.brickLabel)
 		self.glusterDetailsContainer.append(self.brickSelection)
+		self.glusterDetailsContainer.append(self.driveSelectionLabel)
+		self.glusterDetailsContainer.append(self.driveSelection)
 		self.glusterDetailsContainer.append(self.glusterLabel)
 		self.glusterDetailsContainer.append(self.glusterSelection)
 		self.glusterDetailsContainer.append(self.tuningSelectionLabel)
@@ -829,9 +836,9 @@ class FortyFiveDash(App):
 		vDevs = self.vDevSelection.get_value()
 		raidLevel = self.raidSelection.get_value()
 		if isAdvanced:
-			f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a %s -bq\n"%(vDevs, raidLevel.lower(), str(self.ashiftInput.get_text())))
+			f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -d %s -a %s -bq\n"%(vDevs, raidLevel.lower(), self.driveSelection.get_value(), str(self.ashiftInput.get_text())))
 		elif not isAdvanced:
-			f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -a 9 -bq\n"%(vDevs, raidLevel.lower()))
+			f.write("[script2]\naction=execute\nfile=/opt/gtools/bin/zcreate -v %s -l %s -n zpool -d %s -a 9 -bq\n"%(vDevs, raidLevel.lower(), self.driveSelection.get_value()))
 		f.write("ignore_script_errors=no\n\n")
 		bricks = self.brickSelection.get_value()
 		if isAdvanced:
@@ -914,6 +921,8 @@ class FortyFiveDash(App):
 			currentVolumeList = newEntries
 			noVolumes = False
 			noZpools = False
+			self.updateVolumeLists()
+			self.updateMonitorTables()		
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		if entries1 != 0:
 			self.updateVolumeLists()
