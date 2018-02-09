@@ -615,6 +615,7 @@ class FortyFiveDash(App):
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
 		#--------------------------------------Create TabBox -----------------------------------------------------
 		self.createTabBox = gui.TabBox(style={'id':'CreateTabBox'})#'background-color':'%s'%baseColor})
+		self.createTabBox.id='#CreateTabBox'
 		self.createTabBox.add_tab(createContainer, "Create - Volume", None)
 		self.createTabBox.add_tab(createZpoolContainer, "Create - Zpool", None)
 		mainCreateContainer.append(self.createTabBox)
@@ -927,12 +928,6 @@ class FortyFiveDash(App):
 	def createPress(self, widget):
 		global lastBrick, hostsConf
 		self.saveHosts()
-		try:
-			numHosts
-		except NameError:
-			numHosts = None
-		if numHosts == None:
-			return 0
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
 			return 0
@@ -985,7 +980,9 @@ class FortyFiveDash(App):
 			self.updateVolumeLists()
 			self.updateMonitorTables()
 			self.overviewTableUpdate()
-			self.updateZpools()		
+			self.updateZpools()
+			self.detailTable.empty()
+			self.detailTable.append_from_list(self.detailText())		
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 			newPort = self.portEntry.get_text()
 			newUsername = self.usernameEntry.get_text()
