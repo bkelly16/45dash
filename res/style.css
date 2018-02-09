@@ -571,7 +571,6 @@ input[type='range']:disabled::-moz-range-thumb {
 
 .TabBox ul {
     padding-left: 0;
-    border: 2px solid red;
 }
 
 .tabs li {
