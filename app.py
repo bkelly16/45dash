@@ -64,7 +64,8 @@ class FortyFiveDash(App):
 
 	 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# LOCAL FUNCTIONS #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 	def __init__(self, *args):
-		super(FortyFiveDash, self).__init__(*args)
+		res_path = os.path.join(os.path.dirname(__file__), 'res')
+		super(FortyFiveDash, self).__init__(*args, static_file_path=res_path)
 	#--------------------------------------------Monitor Functions-------------------------------------------------
 
 
@@ -259,7 +260,7 @@ class FortyFiveDash(App):
 		self.driveSelection = gui.DropDown(width='30%', height=30, style={'float':'right'})
 		for number in range(2, len(self.driveMapTable())):
 			self.driveSelection.append(str(number))
-		self.driveSelection.select_by_value(len(self.driveMapTable())-1)
+		self.driveSelection.select_by_value(str(len(self.driveMapTable())-1))
 		self.advancedCheckButton = gui.Button('Show advanced options', width='100%', height=30, style={'float':'left'})
 		self.advancedCheckButton.set_on_click_listener(self.showAdvanced)
 		self.resetButton = gui.Button('Reset to defaults', width='100%', height=30)
@@ -578,7 +579,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Appending containers-----------------------------------------------
 		global hostsInputContainer
-		mainContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		mainContainer = gui.Widget(width='100%', height='100%', style={'id':'MainContainer'})#,'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		monitorContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainCreateContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainMenuContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
@@ -613,24 +614,26 @@ class FortyFiveDash(App):
 		monitorZpoolContainer.append(self.monitorZpoolZpoolContainer)
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
 		#--------------------------------------Create TabBox -----------------------------------------------------
-		self.createTabBox = gui.TabBox(style={'background-color':'%s'%baseColor})
+		self.createTabBox = gui.TabBox(style={'id':'CreateTabBox'})#'background-color':'%s'%baseColor})
 		self.createTabBox.add_tab(createContainer, "Create - Volume", None)
 		self.createTabBox.add_tab(createZpoolContainer, "Create - Zpool", None)
 		mainCreateContainer.append(self.createTabBox)
 		#--------------------------------------Monitor tabbox-----------------------------------------------------
-		self.monitorTabBox = gui.TabBox(style={'background-color':'%s'%baseColor})
+		self.monitorTabBox = gui.TabBox(style={'id':'MonitorTabBox'})#'background-color':'%s'%baseColor, 
 		self.monitorTabBox.add_tab(monitorVolumeContainer, "Monitor - Volume", None)
 		self.monitorTabBox.add_tab(monitorDrivesContainer, "Monitor - Drives", None)
 		self.monitorTabBox.add_tab(monitorZpoolContainer, "Monitor - Zpool", None)
 		monitorContainer.append(self.monitorTabBox)
 		#--------------------------------------TabBox configuation------------------------------------------------
-		self.mainTabBox = gui.TabBox(style={'background-color':'%s'%baseColor})
+		self.mainTabBox = gui.TabBox(style={'id':'MainTabBox'})
 		self.mainTabBox.add_tab(mainMenuContainer, "Main Menu", None)
 		self.mainTabBox.add_tab(mainCreateContainer, "Create", None)
 		self.mainTabBox.add_tab(monitorContainer, "Monitor", None)
 
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
 		mainContainer.append(self.mainTabBox)
+
+
 		return mainContainer
 
 
@@ -788,8 +791,15 @@ class FortyFiveDash(App):
 		return count
 	#-----------------------------------------------Create functions----------------------------------------------
 	def saveHosts(self):
-		global hostsConf
+		global hostsConf, numHosts
 		hosts = []
+		try:
+			numHosts
+		except NameError:
+			numHosts = None
+		if numHosts == None:
+			self.notification_message('Error','You must configure your hosts')
+			return 0
 		for num in range(1, numHosts+1):
 			hosts.append(hostsInputContainer.children[num].get_text())
 		for entry in hosts:
@@ -803,13 +813,11 @@ class FortyFiveDash(App):
 			hostsConf = hostsConf + "%s\n"%entry
 
 	def hostsInputDropDownFunction(self, widget, selection):
-		global localHost
-		global hostsList
+		global localHost, numHosts, hostsList
 		if selection == '':
 			return 0
 		hostsList = {}
 		hostsInputContainer.empty()
-		global numHosts
 		numHosts = int(selection)
 		for num in range(1,numHosts+1):
 			if num % 2 == 1:
@@ -853,12 +861,12 @@ class FortyFiveDash(App):
 
 	def reset(self, widget):
 		self.nameInput.set_text('NewVolume')
-		self.chassisSizeInput.select_by_value('30')
 		self.raidSelection.select_by_value('RAIDZ2')
 		self.vDevSelection.select_by_value('3')
 		self.brickSelection.select_by_value('8')
+		self.driveSelection.select_by_value(str(len(self.driveMapTable())-1))
 		self.glusterSelection.select_by_value('Distributed')
-		self.tuningSelection.select_by_value('Default')
+		self.tuningSelection.select_by_value('SMB Filesharing')
 
 	def gDeployFile(self):
 		global lastBrick
@@ -885,7 +893,7 @@ class FortyFiveDash(App):
 			f.write("[script3]\naction=execute\nfile=/opt/gtools/bin/mkbrick -n zpool -A 100G -C -b %s -p 95 -fq\n"%(bricks))
 		f.write("ignore_script_errors=no\n\n[update-file1]\naction=edit\ndest=/usr/lib/systemd/system/zfs-import-cache.service\nreplace=ExecStart=\nline=ExecStart=/usr/local/libexec/zfs/startzfscache.sh\n\n")
 		f.write("[script5]\naction=execute\nfile=/opt/gtools/bin/startzfscache\nignore_script_errors=no\n\n")
-		f.write(nfsText)
+		
 		glusterConfig = self.glusterSelection.get_value()
 		glusterName = self.nameInput.get_text()
 		mkarbcmd = "/opt/gtools/bin/mkarb -b %d"%int(bricks)
@@ -913,10 +921,18 @@ class FortyFiveDash(App):
 			elif tuneProfile == 'Virtualization':
 				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
 		f.write(ctdbText)
+		f.write("\n\n"+nfsText)
 		f.close()
 
 	def createPress(self, widget):
-		global lastBrick
+		global lastBrick, hostsConf
+		self.saveHosts()
+		try:
+			numHosts
+		except NameError:
+			numHosts = None
+		if numHosts == None:
+			return 0
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
 			return 0
@@ -927,13 +943,10 @@ class FortyFiveDash(App):
 				self.notification_message('Error 401', "You can't use special characters (%s) in gluster name"%(char))
 				print "Error 401: Invalid Character used for a name"
 				return 0
-
 		start = time.time()
-		self.saveHosts()
 		if hostsConf == 401:
 			print "Error 401: Invalid Character used for a name"
 			return 0
-
 		if len(self.retrieveVolumes()) != 0:
 			for entry in self.retrieveVolumes():
 				if name == entry:
@@ -1030,7 +1043,8 @@ class FortyFiveDash(App):
 	def numGaneshaIPDropDownSelected(self, widget, selection):
 		global numGanesha
 		global ganeshaList
-		#ganeshaList = {}
+		if selection == '':
+			return 0
 		self.GaneshaiHostContainer.empty()
 		numGanesha = int(selection)
 		for num in range(1, numGanesha+1):
@@ -1039,16 +1053,13 @@ class FortyFiveDash(App):
 			if num % 2 == 0:
 				self.ipInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
 			self.ipInput.set_text('192.168.16.%s'%num)
-			#ganeshaList[num] = self.ipInput.get_text()
 			self.GaneshaiHostContainer.append(self.ipInput, num)
 		ganeshaList = []
 		for num in range(1, numGanesha+1):
 			ganeshaList.append(self.GaneshaiHostContainer.children[num].get_text())
 
 	def nfsFile(self, widget):
-		global nfsText
-		global nfsEnabled
-		global ganeshaList
+		global nfsText, nfsEnabled, ganeshaList
 		if ganeshaList == []:
 			self.notification_message('Error','Input valid IPs')
 			return 0
@@ -1058,14 +1069,26 @@ class FortyFiveDash(App):
 			nfsEnabled = False
 			nfsText = ' '
 		elif nfsEnabled == False:
-			nfsEnabled = True
-			self.notification_message('Action','NFS Ganesha Enabled')
-			nfsText = "\n\n[service7]\naction=enable\nservice=corosync\nignore_errors=no\n\n[service8]\naction=start\nservice=corosync\nignore_errors=no\n\n[service9]\naction=enable\nservice=pacemaker\nignore_errors=no\n\n[service10]\naction=start\nservice=pacemaker\nignore_errors=no\n\n[service11]\naction=enable\nservice=pscd\nignore_errors=no\n\n[service12]\naction=start\nservice=pscd\nignore_errors=no\n\n[nfs-ganesha]\naction=create-cluster\nha-name=ganesha-ha-360\ncluster-nodes="
-			for entry in connectedHostNames:
+			nfsText = "[nfs-ganesha]\naction=create-cluster\nha-name=ganesha-ha-360\ncluster-nodes="
+			hosts = []
+			try:
+				numHosts
+			except NameError:
+				numHosts = None
+			if numHosts == None:
+				self.notification_message('Error','You must configure your hosts')
+				return 0
+			for num in range(1, numHosts+1):
+				hosts.append(hostsInputContainer.children[num].get_text())
+			for entry in hosts:
 				nfsText = nfsText + entry + ','
 			nfsText = nfsText + '\nvip='
 			for entry in ganeshaList:
 				nfsText = nfsText + entry + ','
+			nfsText = nfsText+"\n\n[service7]\naction=enable\nservice=corosync\nignore_errors=no\n\n[service8]\naction=start\nservice=corosync\nignore_errors=no\n\n[service9]\naction=enable\nservice=pacemaker\nignore_errors=no\n\n[service10]\naction=start\nservice=pacemaker\nignore_errors=no\n\n[service11]\naction=enable\nservice=pscd\nignore_errors=no\n\n[service12]\naction=start\nservice=pscd\nignore_errors=no\n\n"
+			nfsEnabled = True
+			self.enableGaneshaButton.set_text('Disable NFS Ganesha')
+			self.notification_message('Action','NFS Ganesha Enabled')
 		print nfsText
 
 	#-----------------------------------------------Monitor Functions---------------------------------------------
@@ -1093,6 +1116,8 @@ class FortyFiveDash(App):
 		global choice
 		stopIsConfirmed = False
 		deleteIsConfirmed = False
+		if selection == None:
+			return 0
 		choice = self.volumeList.children[selection].get_text()
 		self.stopButton.set_text("Stop %s"%choice)
 		self.startButton.set_text("Start %s"%choice)
