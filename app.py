@@ -75,21 +75,23 @@ class FortyFiveDash(App):
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' /opt/45dash/lsdevpy"], shell=True)
+		subprocess.call(["dmap -qs 60"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
-		global lastBrick
+		global lastBrick, brick, choice
 	
-		#--------------------------------------Error version------------------------------------------------------
+		#--------------Check if zpools and volumes are present and set defaults if they are not----------------------
 		if len(self.retrieveVolumes()) == 0:
 			noVolumes = True
 		else:
 			noVolumes = False
-		if len(self.getZpoolStats()) == 0:
+
+		if len(self.getZpoolStats()) == 1:
 			noZpools = True
 		else:
 			noZpools = False
-		global brick
+
 		brick = str(self.driveMapTable()[1][0]).strip('*')
-		global choice
+
 		i = 0
 		if noVolumes == True:
 			choice = 'all'
@@ -529,7 +531,7 @@ class FortyFiveDash(App):
 			self.nozpool = gui.TableItem("No Zpools Present")
 			self.zpoolLine.append(self.nozpool)
 			self.monitorZpoolTable.append(self.zpoolLine)
-		if noZpools == False:
+		elif noZpools == False:
 			for line in self.getZpoolStats():
 				self.zpoolLine = gui.TableRow()
 				self.zpoolName = gui.TableItem(" "+line[0])
@@ -1405,9 +1407,12 @@ class FortyFiveDash(App):
 		return lines2
 
 	def deleteZpool(self, widget):
+		initialNumZpools = len(self.getZpoolStats())
 		zpool = zpoolChoice.strip(' ')
 		subprocess.call(["zpool destroy %s"%(zpool)], shell=True)
 		self.notification_message("", "zpool %s has been deleted"%zpool)
+
+
 		self.monitorZpoolTable.empty()
 		for line in self.getZpoolStats():
 			self.zpoolLine = gui.TableRow()
