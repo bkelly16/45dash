@@ -74,7 +74,7 @@ class FortyFiveDash(App):
 	def main(self):
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
-		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
+		subprocess.call(["sed -i -e 's/\r$//' /opt/45dash/lsdevpy"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick
 	
