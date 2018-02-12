@@ -3,7 +3,7 @@ from remi import start, App
 import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
 
 #------------------------------------------------------------------------------------------------------------------
-rConf = open('45dash.conf','r')
+rConf = open('/opt/45dash/45dash.conf','r')
 content = rConf.readlines()
 global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed
 noVolumes = False
@@ -73,7 +73,7 @@ class FortyFiveDash(App):
 	
 	def main(self):
 		#---------------------------------------Preconfig---------------------------------------------------------
-		subprocess.call(["chmod +x /bin/45dash/lsdevpy"], shell=True)
+		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' lsdevpy"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick
@@ -1244,7 +1244,7 @@ class FortyFiveDash(App):
 		return bricks2
 
 	def driveMapTable(self):
-		r = subprocess.Popen("/bin/45dash/lsdevpy -n", stdout=subprocess.PIPE, shell=True).stdout
+		r = subprocess.Popen("/opt/45dash/lsdevpy -n", stdout=subprocess.PIPE, shell=True).stdout
 		lines = r.read().splitlines()
 
 		lines2 = []
