@@ -616,19 +616,21 @@ class FortyFiveDash(App):
 		monitorZpoolContainer.append(self.monitorZpoolZpoolContainer)
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
 		#--------------------------------------Create TabBox -----------------------------------------------------
-		self.createTabBox = gui.TabBox(style={'id':'CreateTabBox'})#'background-color':'%s'%baseColor})
-		self.createTabBox.id='#CreateTabBox'
+		self.createTabBox = gui.TabBox()
+		self.createTabBox.add_class('CreateTabBox')
 		self.createTabBox.add_tab(createContainer, "Create - Volume", None)
 		self.createTabBox.add_tab(createZpoolContainer, "Create - Zpool", None)
 		mainCreateContainer.append(self.createTabBox)
 		#--------------------------------------Monitor tabbox-----------------------------------------------------
-		self.monitorTabBox = gui.TabBox(style={'id':'MonitorTabBox'})#'background-color':'%s'%baseColor, 
+		self.monitorTabBox = gui.TabBox()
+		self.monitorTabBox.add_class('MonitorTabBox')
 		self.monitorTabBox.add_tab(monitorVolumeContainer, "Monitor - Volume", None)
 		self.monitorTabBox.add_tab(monitorDrivesContainer, "Monitor - Drives", None)
 		self.monitorTabBox.add_tab(monitorZpoolContainer, "Monitor - Zpool", None)
 		monitorContainer.append(self.monitorTabBox)
 		#--------------------------------------TabBox configuation------------------------------------------------
-		self.mainTabBox = gui.TabBox(style={'id':'MainTabBox'})
+		self.mainTabBox = gui.TabBox()
+		self.mainTabBox.add_class('MainTabBox')
 		self.mainTabBox.add_tab(mainMenuContainer, "Main Menu", None)
 		self.mainTabBox.add_tab(mainCreateContainer, "Create", None)
 		self.mainTabBox.add_tab(monitorContainer, "Monitor", None)
@@ -958,7 +960,7 @@ class FortyFiveDash(App):
 		self.notification_message("Action", "%s is in the oven, estimated time: %s seconds "%(self.nameInput.get_text(), str(round(estimatedTime, 2))))
 		entries1 = len(self.retrieveVolumes())
 		self.gDeployFile()
-		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
+		subprocess.call(['gdeploy -c deploy-cluster.conf -vv'], shell=True)
 		end = time.time()
 		totalTime = end-start
 		newEntries = len(self.retrieveVolumes())
