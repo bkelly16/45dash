@@ -97,9 +97,6 @@ class FortyFiveDash(App):
 			choice = 'all'
 		elif noVolumes == False:
 			choice = str(self.retrieveVolumes()[i])
-			while self.infoTableFunction(choice)[3][1].strip(" ").lower() != 'started':
-				i = i + 1
-				choice = str(self.retrieveVolumes()[i])
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Main Menu Configuration -------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -669,6 +666,8 @@ class FortyFiveDash(App):
 			self.drivesVolumeList.append(self.volume)
 	
 	def updateMonitorTables(self):
+		if noVolumes:
+			return 0
 		self.statusTable.empty()
 		self.statusTableTitle = gui.TableRow()
 		self.statusTableTitle0 = gui.TableItem("Gluster Process")
@@ -930,7 +929,8 @@ class FortyFiveDash(App):
 		f.close()
 
 	def createPress(self, widget):
-		global lastBrick, hostsConf
+		global lastBrick, hostsConf, noVolumes
+		initalNoVolumes = noVolumes
 		self.saveHosts()
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
@@ -960,7 +960,7 @@ class FortyFiveDash(App):
 		self.notification_message("Action", "%s is in the oven, estimated time: %s seconds "%(self.nameInput.get_text(), str(round(estimatedTime, 2))))
 		entries1 = len(self.retrieveVolumes())
 		self.gDeployFile()
-		subprocess.call(['gdeploy -c deploy-cluster.conf -vv'], shell=True)
+		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
 		end = time.time()
 		totalTime = end-start
 		newEntries = len(self.retrieveVolumes())
@@ -981,6 +981,11 @@ class FortyFiveDash(App):
 			currentVolumeList = newEntries
 			noVolumes = False
 			noZpools = False
+			choice = self.nameInput.get_text()
+			if initalNoVolumes == True:
+				self.startButton.set_text('Start %s'%choice)
+				self.stopButton.set_text('Stop %s'%choice)
+				self.deleteButton.set_text('Delete %s'%choice)
 			self.updateVolumeLists()
 			self.updateMonitorTables()
 			self.overviewTableUpdate()
@@ -1095,6 +1100,7 @@ class FortyFiveDash(App):
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def infoTableFunction(self, choice):
 		if noVolumes == True:
+			self.infoTable.empty()
 			print 'No Volumes'
 			return 'No Volumes'
 		elif noVolumes == False:
@@ -1165,21 +1171,21 @@ class FortyFiveDash(App):
 			stopIsConfirmed = True
 	
 	def deleteGluster(self, widget):
-		global choice
+		global choice, noVolumes
 		global deleteIsConfirmed
 		if deleteIsConfirmed:
 			self.notification_message("Action","%s will be deleted, this may take a few seconds"%choice)
 			numVol = len(self.retrieveVolumes())
-			if numVol == 1:
-				self.notification_message("Error 403", "Last present gluster, ending will cause dashboard to fail")
-				print "Error 403: Cannot delete last gluster"
-				return 403
 			subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
 			numVol2 = len(self.retrieveVolumes())
 			if numVol2 == numVol:
 				self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
 				return 0
-			choice = self.retrieveVolumes()[0]
+			if len(self.retrieveVolumes()) == 0:
+				choice = 'all'
+				noVolumes = True
+			else:
+				choice = self.retrieveVolumes()[0]
 			numActVol = self.getNumActVolumes()
 			self.updateMonitorTables()
 			self.numActVolumes2.set_text((str(numActVol)))
@@ -1193,6 +1199,8 @@ class FortyFiveDash(App):
 			return 0
 	
 	def statusTableFunction(self):
+		if noVolumes == True:
+			return [('No Volumes','','','','','','')]
 		status = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 		if status == "started":
 			r=subprocess.Popen(['gluster volume status %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
