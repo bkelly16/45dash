@@ -5,7 +5,9 @@ import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('/opt/45dash/45dash.conf','r')
 content = rConf.readlines()
-global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed
+global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed, vvEnabled, vv
+vv = ''
+vvEnabled = False
 noVolumes = False
 noZpools = False
 ctdbEnabled = False
@@ -264,6 +266,8 @@ class FortyFiveDash(App):
 		self.advancedCheckButton.set_on_click_listener(self.showAdvanced)
 		self.resetButton = gui.Button('Reset to defaults', width='100%', height=30)
 		self.resetButton.set_on_click_listener(self.reset)
+		self.debuggingButton = gui.Button('Enable Terminal Debugging', width='100%', height=30, style={'float':'left'})
+		self.debuggingButton.set_on_click_listener(self.toggleDebugging)
 		self.createButton = gui.Button('Create new gluster', width='100%', height=30, style={'float':'left'})
 		self.createButton.set_on_click_listener(self.createPress)
 		self.glusterLabel = gui.Label('Select Gluster Configuation', width='70%', height=30, style={'float':'left'})
@@ -289,6 +293,7 @@ class FortyFiveDash(App):
 		self.glusterDetailsContainer.append(self.tuningSelection)
 		self.glusterDetailsContainer.append(self.advancedCheckButton)
 		self.glusterDetailsContainer.append(self.resetButton)
+		self.glusterDetailsContainer.append(self.debuggingButton)
 		self.glusterDetailsContainer.append(self.createButton)
 		#--------------------------------------Sharing protocols--------------------------------------------------
 		self.sharingContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
@@ -575,10 +580,25 @@ class FortyFiveDash(App):
 		self.monitorZpoolStatusContainer.append(self.zpoolStatusTable)
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Front end configuation---------------------------------------------
+		self.loadingScreen = gui.Widget(width='100%', height='100%')
+		self.loadingScreen.add_class('sk-folding-cube')
+		self.loadingScreen1 = gui.Widget(width='100%', height='100%')
+		self.loadingScreen1.add_class('sk-cube1 sk-cube')
+		self.loadingScreen2 = gui.Widget(width='100%', height='100%')
+		self.loadingScreen2.add_class('sk-cube2 sk-cube')
+		self.loadingScreen3 = gui.Widget(width='100%', height='100%')
+		self.loadingScreen3.add_class('sk-cube3 sk-cube')
+		self.loadingScreen4 = gui.Widget(width='100%', height='100%')
+		self.loadingScreen4.add_class('sk-cube4 sk-cube')
+		self.loadingScreen.append(self.loadingScreen1)
+		self.loadingScreen.append(self.loadingScreen2)
+		self.loadingScreen.append(self.loadingScreen3)
+		self.loadingScreen.append(self.loadingScreen4)
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Appending containers-----------------------------------------------
-		global hostsInputContainer
-		mainContainer = gui.Widget(width='100%', height='100%', style={'id':'MainContainer'})#,'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		global hostsInputContainer, mainContainer
+		mainContainer = gui.Widget(width='100%', height='100%')#,'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		mainContainer.add_class('MainContainer')
 		monitorContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainCreateContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainMenuContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
@@ -634,7 +654,6 @@ class FortyFiveDash(App):
 
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
 		mainContainer.append(self.mainTabBox)
-
 
 		return mainContainer
 
@@ -928,12 +947,30 @@ class FortyFiveDash(App):
 		f.write("\n\n"+nfsText)
 		f.close()
 
+	def toggleDebugging(self, widget):
+		global vv, vvEnabled
+		if vvEnabled == False:
+			vv = '-vv'
+			self.debuggingButton.set_text('Disable Terminal Debugging')
+			self.notification_message('Action','Terminal debugging enabled')
+			vvEnabled = True
+		elif vvEnabled == True:
+			vv = ''
+			self.debuggingButton.set_text('Enable Terminal Debugging')
+			self.notification_message('Action','Terminal debugging disabled')
+			vvEnabled = False
+
+
 	def createPress(self, widget):
-		global lastBrick, hostsConf, noVolumes
+		global lastBrick, hostsConf, noVolumes, vv, mainContainer
+		mainContainer.empty()
+		mainContainer.append(self.loadingScreen)
 		initalNoVolumes = noVolumes
 		self.saveHosts()
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
+			mainContainer.empty()
+			mainContainer.append(self.mainTabBox)
 			return 0
 		isRetry = False
 		name = self.nameInput.get_text()
@@ -941,16 +978,22 @@ class FortyFiveDash(App):
 			if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
 				self.notification_message('Error 401', "You can't use special characters (%s) in gluster name"%(char))
 				print "Error 401: Invalid Character used for a name"
+				mainContainer.empty()
+				mainContainer.append(self.mainTabBox)
 				return 0
 		start = time.time()
 		if hostsConf == 401:
 			print "Error 401: Invalid Character used for a name"
+			mainContainer.empty()
+			mainContainer.append(self.mainTabBox)
 			return 0
 		if len(self.retrieveVolumes()) != 0:
 			for entry in self.retrieveVolumes():
 				if name == entry:
 					self.notification_message("Error 402", "The name %s is already in use by another gluster"%(name))
 					print "Error 402: Name in use"
+					mainContainer.empty()
+					mainContainer.append(self.mainTabBox)
 					return 0
 		estimatedTime = random.uniform(79.4, 90.0)
 		if nfsEnabled == True:
@@ -960,7 +1003,7 @@ class FortyFiveDash(App):
 		self.notification_message("Action", "%s is in the oven, estimated time: %s seconds "%(self.nameInput.get_text(), str(round(estimatedTime, 2))))
 		entries1 = len(self.retrieveVolumes())
 		self.gDeployFile()
-		subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
+		subprocess.call(['gdeploy -c deploy-cluster.conf %s'%vv], shell=True)
 		end = time.time()
 		totalTime = end-start
 		newEntries = len(self.retrieveVolumes())
@@ -969,7 +1012,7 @@ class FortyFiveDash(App):
 				self.notification_message("Error!", "Don't know what happened but %s couldn't be made. May have been an issue with brick directory, trying again"%self.nameInput.get_text())
 				lastBrick = lastBrick+20
 				self.gDeployFile()
-				subprocess.call(['gdeploy -c deploy-cluster.conf'], shell=True)
+				subprocess.call(['gdeploy -c deploy-cluster.conf %s'%vv], shell=True)
 				isRetry = True
 				totalTime = totalTime*2
 			if isRetry:
@@ -991,7 +1034,7 @@ class FortyFiveDash(App):
 			self.overviewTableUpdate()
 			self.updateZpools()
 			self.detailTable.empty()
-			self.detailTable.append_from_list(self.detailText())		
+			self.detailTable.append_from_list(self.detailText())
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 			newPort = self.portEntry.get_text()
 			newUsername = self.usernameEntry.get_text()
@@ -1000,22 +1043,30 @@ class FortyFiveDash(App):
 			if newPort > 8099 or newPort < 8000:
 				print "Error 404: Port ID must only be between 8000 and 8099"
 				self.notification_message("Error 404", "Port ID must only be between 8000 and 8099")
+				mainContainer.empty()
+				mainContainer.append(self.mainTabBox)
 				return 0
 			for char in newUsername:
 				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
 					print 'Error 405: Username must be alphanumeric'
 					self.notification_message('Error 405', "You can't use special characters (%s) in username"%(char))
+					mainContainer.empty()
+					mainContainer.append(self.mainTabBox)
 					return 0
 			for char in newPassword:
 				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
 					print 'Error 406: Password must be alphanumeric'
 					self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
+					mainContainer.empty()
+					mainContainer.append(self.mainTabBox)
 					return 0
 			conf = open('45dash.conf', 'w+')
 			conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
 			conf.close() 
 		if entries1 != 0:
 			self.updateVolumeLists()
+		mainContainer.empty()
+		mainContainer.append(self.mainTabBox)	
 
 	def createZpool(self, widget):
 		subprocess.call(['zcreate -d %s -l %s -n %s -v %s -b'%(self.zpoolBrickSelection.get_value(), self.zpoolRaidSelection.get_value().lower(),self.zpoolNameInput.get_text(),self.zpoolVDevSelection.get_value())], shell=True)
