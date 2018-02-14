@@ -1,6 +1,8 @@
 import remi.gui as gui
 from remi import start, App
 import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
+from threading import Thread
+from time import sleep
 
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('/opt/45dash/45dash.conf','r')
@@ -57,8 +59,19 @@ for char in localHost1:
 		localHost = localHost + char
 	if char == '.':
 		break
+def simulated_long_time_task(app_instance):
+		print("Running")
 
-
+class LoadingAnimation(gui.Widget):
+	def __init__(self, *args, **kwargs):
+		super(LoadingAnimation, self).__init__(*args, **kwargs)
+		self.style['background-color']= 'red'
+		self.style['position']='relative'
+		self.style['-webkit-animation-name']='myloadinganimation'
+		self.style['-webkit-animation-duration']='4s'
+		self.style['animation-name']='myloadinganimation'
+		self.style['animation-duration']='4s'
+		self.style['animation-iteration-count']='infinite'
 
 
  #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-# UI RENDERING#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -80,7 +93,7 @@ class FortyFiveDash(App):
 		subprocess.call(["dmap -qs 60"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick, brick, choice
-	
+		self.loading_animation_widget = LoadingAnimation(width=100, height=100, margin='50px auto')
 		#--------------Check if zpools and volumes are present and set defaults if they are not----------------------
 		if len(self.retrieveVolumes()) == 0:
 			noVolumes = True
@@ -654,7 +667,6 @@ class FortyFiveDash(App):
 
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
 		mainContainer.append(self.mainTabBox)
-
 		return mainContainer
 
 
@@ -960,17 +972,33 @@ class FortyFiveDash(App):
 			self.notification_message('Action','Terminal debugging disabled')
 			vvEnabled = False
 
-
 	def createPress(self, widget):
 		global lastBrick, hostsConf, noVolumes, vv, mainContainer
-		mainContainer.empty()
-		mainContainer.append(self.loadingScreen)
 		initalNoVolumes = noVolumes
+		self.loading_animation_widget.empty()
+		self.loading_animation_text = gui.Label('%s is being made'%self.nameInput.get_text(), style={'text-align':'center'})
+		self.loading_animation_text2 = gui.Label('You can follow playbook in terminal', style={'text-align':'center'})
+		self.loading_animation_text3 = gui.Label('RAID level: %s'%self.raidSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text4 = gui.Label('# of VDevs: %s'%self.vDevSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text5 = gui.Label('# of bricks: %s'%self.brickSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text6 = gui.Label('# of drives: %s'%self.driveSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text7 = gui.Label('Gluster Configuation: %s'%self.glusterSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text8 = gui.Label('Tuning profile: %s'%self.tuningSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_widget.append(self.loading_animation_text)
+		self.loading_animation_widget.append(self.loading_animation_text2)
+		self.loading_animation_widget.append(self.loading_animation_text3)
+		self.loading_animation_widget.append(self.loading_animation_text4)
+		self.loading_animation_widget.append(self.loading_animation_text5)
+		self.loading_animation_widget.append(self.loading_animation_text6)
+		self.loading_animation_widget.append(self.loading_animation_text7)
+		self.loading_animation_widget.append(self.loading_animation_text8)
+		self.set_root_widget(self.loading_animation_widget)
+		thread = Thread(target = simulated_long_time_task, args = (self, ))
+		thread.start()
 		self.saveHosts()
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
-			mainContainer.empty()
-			mainContainer.append(self.mainTabBox)
+			self.thread_finished()
 			return 0
 		isRetry = False
 		name = self.nameInput.get_text()
@@ -978,22 +1006,19 @@ class FortyFiveDash(App):
 			if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
 				self.notification_message('Error 401', "You can't use special characters (%s) in gluster name"%(char))
 				print "Error 401: Invalid Character used for a name"
-				mainContainer.empty()
-				mainContainer.append(self.mainTabBox)
+				self.thread_finished()
 				return 0
 		start = time.time()
 		if hostsConf == 401:
 			print "Error 401: Invalid Character used for a name"
-			mainContainer.empty()
-			mainContainer.append(self.mainTabBox)
+			self.thread_finished()
 			return 0
 		if len(self.retrieveVolumes()) != 0:
 			for entry in self.retrieveVolumes():
 				if name == entry:
 					self.notification_message("Error 402", "The name %s is already in use by another gluster"%(name))
 					print "Error 402: Name in use"
-					mainContainer.empty()
-					mainContainer.append(self.mainTabBox)
+					self.thread_finished()
 					return 0
 		estimatedTime = random.uniform(79.4, 90.0)
 		if nfsEnabled == True:
@@ -1043,30 +1068,30 @@ class FortyFiveDash(App):
 			if newPort > 8099 or newPort < 8000:
 				print "Error 404: Port ID must only be between 8000 and 8099"
 				self.notification_message("Error 404", "Port ID must only be between 8000 and 8099")
-				mainContainer.empty()
-				mainContainer.append(self.mainTabBox)
+				self.thread_finished()
 				return 0
 			for char in newUsername:
 				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
 					print 'Error 405: Username must be alphanumeric'
 					self.notification_message('Error 405', "You can't use special characters (%s) in username"%(char))
-					mainContainer.empty()
-					mainContainer.append(self.mainTabBox)
+					self.thread_finished()
 					return 0
 			for char in newPassword:
 				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
 					print 'Error 406: Password must be alphanumeric'
 					self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
-					mainContainer.empty()
-					mainContainer.append(self.mainTabBox)
+					self.thread_finished()
 					return 0
 			conf = open('45dash.conf', 'w+')
+			lastBrick = lastBrick + int(self.brickSelection.get_value())
 			conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
 			conf.close() 
 		if entries1 != 0:
 			self.updateVolumeLists()
-		mainContainer.empty()
-		mainContainer.append(self.mainTabBox)	
+		self.thread_finished()
+
+	def thread_finished(self):
+		self.set_root_widget(mainContainer)
 
 	def createZpool(self, widget):
 		subprocess.call(['zcreate -d %s -l %s -n %s -v %s -b'%(self.zpoolBrickSelection.get_value(), self.zpoolRaidSelection.get_value().lower(),self.zpoolNameInput.get_text(),self.zpoolVDevSelection.get_value())], shell=True)
@@ -1079,6 +1104,11 @@ class FortyFiveDash(App):
 			ctdbEnabled = False
 			ctdbText = ' '
 		elif ctdbEnabled == False:
+			try:
+				numHosts
+			except NameError:
+				self.notification_message('Error','Configure your hosts')
+				return 0
 			ctdbEnabled = True
 			self.notification_message('Action', 'CTDB Enabled')
 			self.enableCtdbButton.set_text('Disable CTDB')
@@ -1090,6 +1120,7 @@ class FortyFiveDash(App):
 				results.append(splitText)
 			deviceType = results[1][3]
 			publicIP = self.publicIPEntry.get_text()
+
 			ctdbText = "\n\n[volume2]\naction=create\nvolname=ctdb\nreplica_count=%s\nforce=yes\nbrick_dirs=/zpool/ctdb/brick\nignore_errors=no\n\n"%(numHosts)
 			ctdbText = ctdbText + "[ctdb]\naction=setup\npublic_address=%s %s\nctdb_nodes="%(publicIP, deviceType)
 			for entry in connectedHostNames:
@@ -1201,6 +1232,8 @@ class FortyFiveDash(App):
 			initialStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 			if initialStatus == 'started':
 				subprocess.call(["echo 'y' | gluster volume stop %s"%(choice)], shell=True)
+				stopIsConfirmed = False
+				deleteIsConfirmed = False
 				currentStatus = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 				if currentStatus == 'stopped':
 					self.updateVolumeLists()
@@ -1228,6 +1261,8 @@ class FortyFiveDash(App):
 			self.notification_message("Action","%s will be deleted, this may take a few seconds"%choice)
 			numVol = len(self.retrieveVolumes())
 			subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
+			stopIsConfirmed = False
+			deleteIsConfirmed = False
 			numVol2 = len(self.retrieveVolumes())
 			if numVol2 == numVol:
 				self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
@@ -1421,6 +1456,16 @@ class FortyFiveDash(App):
 				else:
 					useful.append(tuple(splitLine))
 		return useful
+
+	def checkDrives(self):
+		for entries in self.driveMapTable():
+			entry = entries[0].strip('*')
+			s = subprocess.Popen(['smartctl -a /dev/disk/by-vdev/%s | grep FAILED!'%entry], shell=True, stdout=subprocess.PIPE).stdout
+			line = s.read().splitlines()
+			if line == []:
+				continue
+			else:
+				self.notification_message('Warning!','Drive %s is likely to fail, save all data and replace drive')
 	#---------------------------------------Zpool functions----------------------------------------------------
 	def getZpoolStats(self):
 		s = subprocess.Popen(["zpool list"], shell=True, stdout=subprocess.PIPE).stdout
