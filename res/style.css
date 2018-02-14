@@ -746,18 +746,19 @@ ul.TreeView{
 background-color: transparent;
 }
 @-webkit-keyframes myloadinganimation {
-    0%   {background-color:white; width:2px; height:2px;}
-    25%  {background-color:yellow;  width:10px; height:10px;}
-    50%  {background-color:orange;  width:30px; height:30px;}
-    75%  {background-color:red;  width:20px; height:20px;}
-    100% {background-color:darkmagenta; width:10px; height:10px;}
+    0%   {background-color:teal; width:250px; height:250px;}
+    25%  {background-color:cyan; width:500px; height:500px;}
+    50%  {background-color:teal; width:750px; height:750px;}
+    75%  {background-color:cyan; width:500px; height:500px;}
+    100% {background-color:teal; width:250px; height:250px;}
+
 }
 
 /* Standard syntax */
 @keyframes myloadinganimation {
-    0%   {background-color:white; width:2px; height:2px;}
-    25%  {background-color:yellow;  width:10px; height:10px;}
-    50%  {background-color:orange;  width:30px; height:30px;}
-    75%  {background-color:red;  width:20px; height:20px;}
-    100% {background-color:darkmagenta; width:10px; height:10px;}
+    0%   {background-color:teal; width:250px; height:250px;}
+    25%  {background-color:cyan; width:500px; height:500px;}
+    50%  {background-color:teal; width:750px; height:750px;}
+    75%  {background-color:cyan; width:500px; height:500px;}
+    100% {background-color:teal; width:250px; height:250px;}
 }
