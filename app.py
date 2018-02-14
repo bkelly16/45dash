@@ -120,7 +120,7 @@ class FortyFiveDash(App):
 		self.activeVolumeLabel = gui.Label('Active Volumes', width='100%', height=30)
 		self.activeVolumeList = gui.ListView(width='100%',  height=670, style={'float':'left'})
 		self.active_Volume_List = self.retrieveVolumes()
-		for vol in self.active_Volume_List:
+		for vol in self.retrieveVolumes():
 			volumeStatus = self.infoTableFunction(vol)[3][1].strip(" ").lower() #Retrieves status by calling gluster info and makes it easy to call by string
 			if volumeStatus =='started':
 				self.volumeListItem = gui.ListItem(vol, style={'color':'#29B809'}) #Checks status and colors green if started or red if stopped
@@ -620,6 +620,7 @@ class FortyFiveDash(App):
 		monitorZpoolContainer = gui.Widget(width='100%', height='100%', style={ 'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		createContainer = gui.Widget(width='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		createZpoolContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		brandingContainer = gui.Widget(width='100%', height=50)
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		mainMenuContainer.append(self.overviewTableContainer)
@@ -645,6 +646,9 @@ class FortyFiveDash(App):
 		#--------------------------------------Monitor Zpool Menu-------------------------------------------------
 		monitorZpoolContainer.append(self.monitorZpoolZpoolContainer)
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
+		#--------------------------------------Branding Container-------------------------------------------------
+		self.logo = gui.Image('/opt/45dash/res/logo.png',width=100, height=50, style={'float':'left'})
+		brandingContainer.append(self.logo)
 		#--------------------------------------Create TabBox -----------------------------------------------------
 		self.createTabBox = gui.TabBox()
 		self.createTabBox.add_class('CreateTabBox')
@@ -666,6 +670,7 @@ class FortyFiveDash(App):
 		self.mainTabBox.add_tab(monitorContainer, "Monitor", None)
 
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
+		mainContainer.append(brandingContainer)
 		mainContainer.append(self.mainTabBox)
 		return mainContainer
 
@@ -1086,6 +1091,7 @@ class FortyFiveDash(App):
 			lastBrick = lastBrick + int(self.brickSelection.get_value())
 			conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
 			conf.close() 
+			self.thred_finished()
 		if entries1 != 0:
 			self.updateVolumeLists()
 		self.thread_finished()
@@ -1198,7 +1204,10 @@ class FortyFiveDash(App):
 			for entry in results:
 				tupleEntry = tuple(entry)
 				entries.append(tupleEntry)
-			del entries[0]
+			try:
+				del entries[0]
+			except IndexError:
+				return 0
 			return entries
 
 	def monitorVolumesListSelected(self, widget, selection):
