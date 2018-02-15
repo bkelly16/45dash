@@ -7,7 +7,8 @@ from time import sleep
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('/opt/45dash/45dash.conf','r')
 content = rConf.readlines()
-global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed, vvEnabled, vv
+global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed, vvEnabled, vv, badDrives
+badDrives = []
 vv = ''
 vvEnabled = False
 noVolumes = False
@@ -93,6 +94,7 @@ class FortyFiveDash(App):
 		subprocess.call(["dmap -qs 60"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global lastBrick, brick, choice
+		self.checkDrives()
 		self.loading_animation_widget = LoadingAnimation(width=100, height=100, margin='50px auto')
 		#--------------Check if zpools and volumes are present and set defaults if they are not----------------------
 		if len(self.retrieveVolumes()) == 0:
@@ -488,11 +490,18 @@ class FortyFiveDash(App):
 			driveAlias = driveAlias.strip("*")
 			driveAlias = driveAlias.strip("['")
 			driveAlias = driveAlias.strip("']")
+			for badDrive in badDrives:
+				if driveAlias.strip('*') == badDrive:
+					driveAlias = '*' + driveAlias
 			char = str(driveAlias)
 			if char[0] == "*":
 				if char[1] == "*":
-					driveAlias = driveAlias.strip("*")
-					self.drive = gui.ListItem(driveAlias, style={'color':'#29B809'})
+					if char[2] == "*":
+						driveAlias = driveAlias.strip('*')
+						self.drive = gui.ListItem(driveAlias, style={'color':'#e9241d'})
+					else:
+						driveAlias = driveAlias.strip("*")
+						self.drive = gui.ListItem(driveAlias, style={'color':'#29B809'})
 				else:
 					driveAlias = driveAlias.strip("*")
 					self.drive = gui.ListItem(driveAlias, style={'color':'#FF6100'})
@@ -521,7 +530,7 @@ class FortyFiveDash(App):
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTable)
 		#--------------------------------------Drive health box---------------------------------------------------
 		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
-		self.healthListLabel = gui.Label('Drive Health',width='100%', height=15)
+		self.healthListLabel = gui.Label('Drive Health',width='100%', height=30)
 		self.healthTable = gui.Table(width='100%',style={'text-align':'left'})
 		healthStats = self.getDriveHealth()
 		for line in healthStats:
@@ -620,7 +629,7 @@ class FortyFiveDash(App):
 		monitorZpoolContainer = gui.Widget(width='100%', height='100%', style={ 'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		createContainer = gui.Widget(width='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		createZpoolContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		brandingContainer = gui.Widget(width='100%', height=50)
+		brandingContainer = gui.Widget(width='100%', height=75)
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		mainMenuContainer.append(self.overviewTableContainer)
@@ -647,7 +656,7 @@ class FortyFiveDash(App):
 		monitorZpoolContainer.append(self.monitorZpoolZpoolContainer)
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
 		#--------------------------------------Branding Container-------------------------------------------------
-		self.logo = gui.Image('/opt/45dash/res/logo.png',width=100, height=50, style={'float':'left'})
+		self.logo = gui.Image('/res/logo.png',width=250, height=75, style={'float':'left', 'padding-left':'5px'})
 		brandingContainer.append(self.logo)
 		#--------------------------------------Create TabBox -----------------------------------------------------
 		self.createTabBox = gui.TabBox()
@@ -989,6 +998,8 @@ class FortyFiveDash(App):
 		self.loading_animation_text6 = gui.Label('# of drives: %s'%self.driveSelection.get_value(), style={'text-align':'center'})
 		self.loading_animation_text7 = gui.Label('Gluster Configuation: %s'%self.glusterSelection.get_value(), style={'text-align':'center'})
 		self.loading_animation_text8 = gui.Label('Tuning profile: %s'%self.tuningSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text9 = gui.Label('NFS Enabled? %s'%str(nfsEnabled), style={'text-align':'center'})
+		self.loading_animation_text10 = gui.Label('CTDB Enabled? %s'%str(ctdbEnabled), style={'text-align':'center'})
 		self.loading_animation_widget.append(self.loading_animation_text)
 		self.loading_animation_widget.append(self.loading_animation_text2)
 		self.loading_animation_widget.append(self.loading_animation_text3)
@@ -997,6 +1008,8 @@ class FortyFiveDash(App):
 		self.loading_animation_widget.append(self.loading_animation_text6)
 		self.loading_animation_widget.append(self.loading_animation_text7)
 		self.loading_animation_widget.append(self.loading_animation_text8)
+		self.loading_animation_widget.append(self.loading_animation_text10)
+		self.loading_animation_widget.append(self.loading_animation_text9)
 		self.set_root_widget(self.loading_animation_widget)
 		thread = Thread(target = simulated_long_time_task, args = (self, ))
 		thread.start()
@@ -1381,9 +1394,12 @@ class FortyFiveDash(App):
 			tuple(entry)
 		return lines4
 
+
 	def brickStatus(self, widget, selection):
+		global badDrives
 		if self.driveList.children[selection].get_text() == "Drive Alias":
 			return 0
+		self.checkDrives()
 		global brick
 		brick = self.driveList.children[selection].get_text()
 		s=subprocess.Popen(["hdparm -I /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
@@ -1410,6 +1426,36 @@ class FortyFiveDash(App):
 			newEntry = re.split(r':', entry)
 			splitList.append(newEntry)
 		self.driveInfoTable.empty()
+		for entry in badDrives:
+			if entry == self.driveList.children[selection].get_text():
+				self.healthTable.empty()
+				self.healthTableError = gui.TableItem('DRIVE WILL LIKELY FAIL! SAVE DATA AND REPLACE AS SOON AS POSSIBLE', style={'text-align':'center', 'color':'white', 'background-color':'red'})
+				self.healthTableError1 = gui.TableItem(style={'background-color':'red'})
+				self.healthTableError2 = gui.TableItem(style={'background-color':'red'})
+				self.healthRow = gui.TableRow()
+				self.healthRow.append(self.healthTableError)
+				self.healthRow.append(self.healthTableError1)
+				self.healthRow.append(self.healthTableError2)
+				self.healthTable.append(self.healthRow)
+				healthStats = self.getDriveHealth()
+				for line in healthStats:
+					self.healthLine = gui.TableRow()
+					self.healthItem0 = gui.TableItem(line[0])
+					self.healthItem1 = gui.TableItem(line[1].replace("_"," ").title())
+					self.healthItem9 = gui.TableItem(line[9].replace("_"," ").title())
+					self.healthLine.append(self.healthItem0)
+					self.healthLine.append(self.healthItem1)
+					self.healthLine.append(self.healthItem9)
+					self.healthTable.append(self.healthLine)
+				self.driveInfoTable.empty()
+				for entry in splitList:
+					self.infoLine = gui.TableRow()
+					self.dInfoItem0 = gui.TableItem(entry[0])
+					self.dInfoItem1 = gui.TableItem(entry[1])
+					self.infoLine.append(self.dInfoItem0)
+					self.infoLine.append(self.dInfoItem1)
+					self.driveInfoTable.append(self.infoLine)
+				return 0
 		for entry in splitList:
 			self.infoLine = gui.TableRow()
 			self.dInfoItem0 = gui.TableItem(entry[0])
@@ -1439,6 +1485,21 @@ class FortyFiveDash(App):
 				isSSD = True
 		useful =[]
 		if isSSD == True:
+			for entry in badDrives:
+				if brick == entry:
+					s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
+					lines = s.read().splitlines()
+					for i in range(57,155):
+						if lines[i] == '':
+							break
+						splitLine = lines[i].split()
+						if splitLine[1] == "Unknown_Attribute":
+							inte =1
+						elif splitLine[1] == "Offline_Uncorrectable":
+							inte = 2
+						else:
+							useful.append(tuple(splitLine))
+					return useful
 			s = subprocess.Popen(["smartctl -a /dev/disk/by-vdev/%s"%brick], shell=True, stdout=subprocess.PIPE).stdout
 			lines = s.read().splitlines()
 			for i in range(55,155):
@@ -1467,6 +1528,8 @@ class FortyFiveDash(App):
 		return useful
 
 	def checkDrives(self):
+		global badDrives
+		badDrives = []
 		for entries in self.driveMapTable():
 			entry = entries[0].strip('*')
 			s = subprocess.Popen(['smartctl -a /dev/disk/by-vdev/%s | grep FAILED!'%entry], shell=True, stdout=subprocess.PIPE).stdout
@@ -1474,7 +1537,8 @@ class FortyFiveDash(App):
 			if line == []:
 				continue
 			else:
-				self.notification_message('Warning!','Drive %s is likely to fail, save all data and replace drive')
+				self.notification_message('Warning!','Drive %s is likely to fail, save all data and replace drive'%entry)
+				badDrives.append(entry)
 	#---------------------------------------Zpool functions----------------------------------------------------
 	def getZpoolStats(self):
 		s = subprocess.Popen(["zpool list"], shell=True, stdout=subprocess.PIPE).stdout
