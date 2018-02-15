@@ -318,7 +318,7 @@ class FortyFiveDash(App):
 		self.publicIPEntry = gui.TextInput(width='30%', height=30, style={'float':'left'})
 		self.publicIPEntry.set_text("192.168.16.16/16")
 		self.enableCtdbButton = gui.Button('Enable CTDB', width='100%', height=30, style={'float':'center'})
-		self.enableCtdbButton.set_on_click_listener(self.ctdbFile)
+		self.enableCtdbButton.set_on_click_listener(self.ctdbPress)
 		self.numGaneshaIPLabel = gui.Label('IPs for NFS Ganesha', width='70%', height=30, style={'float':'left'})
 		self.numGaneshaIPDropDown = gui.DropDown(width='30%', height=30)
 		self.numGaneshaIPDropDown.append(' ')
@@ -973,6 +973,44 @@ class FortyFiveDash(App):
 		f.write("\n\n"+nfsText)
 		f.close()
 
+	def gDeployFileBricks(self):
+		global lastBrick, hostsList, numHosts
+		hosts = []
+		for num in range(1, numHosts+1):
+			hosts.append(hostsInputContainer.children[num].get_text())
+		f = open('deploy-cluster-bricks.conf', 'w+')
+		bricks = self.brickSelection.get_value()
+		glusterConfig = self.glusterSelection.get_value()
+		glusterName = self.nameInput.get_text()
+		mkarbcmd = "/opt/gtools/bin/mkarb -b %d"%int(bricks)
+		for num in range(1, numHosts+1):
+			mkarbcmd = mkarbcmd + " -n %s"%(hostsInputContainer.children[num].get_text())
+		r = subprocess.Popen(mkarbcmd, shell=True, stdout=subprocess.PIPE).stdout
+		mkarb = r.read()
+		tuneProfile = self.tuningSelection.get_value()
+		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
+		if glusterConfig == 'Distributed':
+			mkarb = ""
+			for host in hosts:
+				for i in range(int(lastBrick)+1, int(bricks)+int(lastBrick)+1):
+					mkarb = mkarb+host+":/zpool/vol"+str(i)+"/brick,"
+					lastBrick = int(lastBrick) + 1
+			f.write("replica_count=0\nforce=yes\n")
+			if tuneProfile == 'SMB filesharing':
+				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\n")
+			elif tuneProfile == 'Virtualization':
+				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\n")
+			f.write("brick_dirs=%s"%mkarb)
+		if glusterConfig == 'Distributed Replicated':
+			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
+			if tuneProfile == 'SMB filesharing':
+				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
+			elif tuneProfile == 'Virtualization':
+				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
+		f.write(ctdbText)
+		f.write("\n\n"+nfsText)
+		f.close()
+
 	def toggleDebugging(self, widget):
 		global vv, vvEnabled
 		if vvEnabled == False:
@@ -1054,8 +1092,8 @@ class FortyFiveDash(App):
 			if not isRetry:
 				self.notification_message("Error!", "Don't know what happened but %s couldn't be made. May have been an issue with brick directory, trying again"%self.nameInput.get_text())
 				lastBrick = lastBrick+20
-				self.gDeployFile()
-				subprocess.call(['gdeploy -c deploy-cluster.conf %s'%vv], shell=True)
+				self.gDeployFileBricks()
+				subprocess.call(['gdeploy -c deploy-cluster-bricks.conf %s'%vv], shell=True)
 				isRetry = True
 				totalTime = totalTime*2
 			if isRetry:
@@ -1065,6 +1103,7 @@ class FortyFiveDash(App):
 					self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		else:
 			currentVolumeList = newEntries
+			subprocess.call(['systemctl start NetworkManager'], shell=True)
 			noVolumes = False
 			noZpools = False
 			choice = self.nameInput.get_text()
@@ -1101,10 +1140,10 @@ class FortyFiveDash(App):
 					self.thread_finished()
 					return 0
 			conf = open('45dash.conf', 'w+')
-			lastBrick = lastBrick + int(self.brickSelection.get_value())
+			lastBrick = int(lastBrick) + int(self.brickSelection.get_value())
 			conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
 			conf.close() 
-			self.thred_finished()
+			self.thread_finished()
 		if entries1 != 0:
 			self.updateVolumeLists()
 		self.thread_finished()
@@ -1114,7 +1153,11 @@ class FortyFiveDash(App):
 
 	def createZpool(self, widget):
 		subprocess.call(['zcreate -d %s -l %s -n %s -v %s -b'%(self.zpoolBrickSelection.get_value(), self.zpoolRaidSelection.get_value().lower(),self.zpoolNameInput.get_text(),self.zpoolVDevSelection.get_value())], shell=True)
-	def ctdbFile(self, widget):
+	
+	def ctdbPress(self, widget):
+		self.ctdbFile()
+
+	def ctdbFile(self):
 		global ctdbText
 		global ctdbEnabled
 		if ctdbEnabled == True:
@@ -1137,7 +1180,11 @@ class FortyFiveDash(App):
 			for line in lines:
 				splitText = line.split()
 				results.append(splitText)
-			deviceType = results[1][3]
+			try:
+				deviceType = results[1][3]
+			except IndexError:
+				subprocess.call(['systemctl start NetworkManager'], shell=True)
+				self.ctdbFile()
 			publicIP = self.publicIPEntry.get_text()
 
 			ctdbText = "\n\n[volume2]\naction=create\nvolname=ctdb\nreplica_count=%s\nforce=yes\nbrick_dirs=/zpool/ctdb/brick\nignore_errors=no\n\n"%(numHosts)
@@ -1526,7 +1573,6 @@ class FortyFiveDash(App):
 				else:
 					useful.append(tuple(splitLine))
 		return useful
-
 	def checkDrives(self):
 		global badDrives
 		badDrives = []
