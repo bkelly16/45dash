@@ -747,9 +747,9 @@ background-color: transparent;
 }
 @-webkit-keyframes myloadinganimation {
     0%   {background-color:teal; width:250px; height:250px;}
-    25%  {background-color:cyan; width:500px; height:500px;}
-    50%  {background-color:teal; width:750px; height:750px;}
-    75%  {background-color:cyan; width:500px; height:500px;}
+    25%  {background-color:cyan; width:250px; height:250px;}
+    50%  {background-color:teal; width:250px; height:250px;}
+    75%  {background-color:cyan; width:250px; height:250px;}
     100% {background-color:teal; width:250px; height:250px;}
 
 }
@@ -757,8 +757,8 @@ background-color: transparent;
 /* Standard syntax */
 @keyframes myloadinganimation {
     0%   {background-color:teal; width:250px; height:250px;}
-    25%  {background-color:cyan; width:500px; height:500px;}
-    50%  {background-color:teal; width:750px; height:750px;}
-    75%  {background-color:cyan; width:500px; height:500px;}
+    25%  {background-color:cyan; width:250px; height:250px;}
+    50%  {background-color:teal; width:250px; height:250px;}
+    75%  {background-color:cyan; width:250px; height:250px;}
     100% {background-color:teal; width:250px; height:250px;}
 }
