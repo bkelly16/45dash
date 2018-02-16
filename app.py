@@ -1,13 +1,13 @@
 import remi.gui as gui
 from remi import start, App
-import platform, socket, random, re, subprocess, sys, tempfile, os, time, random
+import platform, socket, random, re, subprocess, sys, tempfile, os, time, random, ast
 from threading import Thread
 from time import sleep
 
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('/opt/45dash/45dash.conf','r')
 content = rConf.readlines()
-global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed, vvEnabled, vv, badDrives
+global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed, vvEnabled, vv, badDrives, hostBricks
 badDrives = []
 vv = ''
 vvEnabled = False
@@ -20,13 +20,18 @@ nfsText = ''
 ganeshaList = []
 stopIsConfirmed = False
 deleteIsConfirmed = False
-global port, username, password, baseColor, lastBrick
+global port, username, password, baseColor
 port = int(str(content[0]).replace("port=","").strip("\n"))
 username = str(content[1]).replace("username=","").strip("\n")
 password = str(content[2]).replace("password=","").strip("\n")
 baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
-lastBrick = (content[4]).replace("lastBrick=",'').strip("\n")
 rConf.close()
+bConf = open('/opt/45dash/bricks.conf','r')
+content2 = bConf.readlines()
+hostsBrickDict = (content2[0]).replace("hostsBrickDict=",'').strip("\n")
+bConf.close()
+eval(hostsBrickDict)
+
 global numConnectedHosts
 global connectedHosts
 etcHosts = open('/etc/hosts')
@@ -93,8 +98,20 @@ class FortyFiveDash(App):
 		subprocess.call(["sed -i -e 's/\r$//' /opt/45dash/lsdevpy"], shell=True)
 		subprocess.call(["dmap -qs 60"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
-		global lastBrick, brick, choice
-		self.checkDrives()
+		global brick, choice, hostsBrickDict
+		#---------------------------------------Brick Dirs--------------------------------------------------------
+		self.hostsBrickDict = ast.literal_eval(hostsBrickDict)
+		self.volumesInUse = []
+		self.arbsInUse = []
+		for entry in self.hostsBrickDict:
+			for vol  in self.hostsBrickDict[entry]:
+				if 'vol' in vol:
+					self.volumesInUse.append(int(vol.strip('vol')))
+				if 'arb' in vol:
+					self.arbsInUse.append(int(vol.strip('arb')))
+		self.volumesInUse.sort()
+		self.arbsInUse.sort()
+		#------------------------------------------Loading Screen--------------------------------------------------
 		self.loading_animation_widget = LoadingAnimation(width=100, height=100, margin='50px auto')
 		#--------------Check if zpools and volumes are present and set defaults if they are not----------------------
 		if len(self.retrieveVolumes()) == 0:
@@ -787,7 +804,7 @@ class FortyFiveDash(App):
 				self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
 				return 0
 		conf = open('45dash.conf', 'w+')
-		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
+		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nhostsBrickDict=%s\n"%(int(newPort), newUsername, newPassword, newColor, hostsBrickDict))
 		conf.close() 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
@@ -918,10 +935,10 @@ class FortyFiveDash(App):
 		self.tuningSelection.select_by_value('SMB Filesharing')
 
 	def gDeployFile(self):
-		global lastBrick
 		global ctdbText
 		global nfsText
 		subprocess.call(['cd ~'], shell=True)
+		self.brickDirectories()
 		f = open("deploy-cluster.conf","w+")
 		f.write(hostsConf)
 		f.write("\n[tune-profile]\nthroughput-performance\n\n[service1]\naction=enable\nservice=ntpd\nignore_errors=no\n\n[service2]\naction=start\nservice=ntpd\nignore_errors=no\n\n[service3]\naction=disable\nservice=firewalld\nignore_errors=no\n\n[service4]\naction=stop\nservice=firewalld\nignore_errors=no\n\n[service5]\naction=enable\nservice=glusterd\nignore_errors=no\n\n[service6]\naction=start\nservice=glusterd\nignore_errors=no\n\n")
@@ -954,9 +971,10 @@ class FortyFiveDash(App):
 		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
 		if glusterConfig == 'Distributed':
 			mkarb = ""
-			for i in range(int(lastBrick)+1, int(bricks)+int(lastBrick)+1):
-				mkarb = mkarb+"/zpool/vol"+str(i)+"/brick,"
-				lastBrick = int(lastBrick) + 1
+			for num in self.goodRange:
+				mkarb = mkarb+"/zpool/vol%d/brick,"%num
+				self.volumesInUse.append(num)
+				self.volumesInUse.sort()
 			f.write("replica_count=0\nforce=yes\n")
 			if tuneProfile == 'SMB filesharing':
 				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\n")
@@ -972,9 +990,23 @@ class FortyFiveDash(App):
 		f.write(ctdbText)
 		f.write("\n\n"+nfsText)
 		f.close()
+	def brickDirectories(self):
+		vols = self.volumesInUse
+		arbs = self.arbsInUse
+		bricksNeeded = int(self.brickSelection.get_value())
+		goodRange = []
+		for num in range(1, 250):
+			if num not in vols:
+				for number in range(0, bricksNeeded):
+					if num+number not in vols and num+number not in goodRange:
+						goodRange.append(num+number)
+
+		self.goodRange =  goodRange[0:bricksNeeded]
 
 	def gDeployFileBricks(self):
-		global lastBrick, hostsList, numHosts
+		self.brickDirectories()
+		global hostsList, numHosts
+		lastBrick = 10
 		hosts = []
 		for num in range(1, numHosts+1):
 			hosts.append(hostsInputContainer.children[num].get_text())
@@ -1027,30 +1059,6 @@ class FortyFiveDash(App):
 	def createPress(self, widget):
 		global lastBrick, hostsConf, noVolumes, vv, mainContainer
 		initalNoVolumes = noVolumes
-		self.loading_animation_widget.empty()
-		self.loading_animation_text = gui.Label('%s is being made'%self.nameInput.get_text(), style={'text-align':'center'})
-		self.loading_animation_text2 = gui.Label('You can follow playbook in terminal', style={'text-align':'center'})
-		self.loading_animation_text3 = gui.Label('RAID level: %s'%self.raidSelection.get_value(), style={'text-align':'center'})
-		self.loading_animation_text4 = gui.Label('# of VDevs: %s'%self.vDevSelection.get_value(), style={'text-align':'center'})
-		self.loading_animation_text5 = gui.Label('# of bricks: %s'%self.brickSelection.get_value(), style={'text-align':'center'})
-		self.loading_animation_text6 = gui.Label('# of drives: %s'%self.driveSelection.get_value(), style={'text-align':'center'})
-		self.loading_animation_text7 = gui.Label('Gluster Configuation: %s'%self.glusterSelection.get_value(), style={'text-align':'center'})
-		self.loading_animation_text8 = gui.Label('Tuning profile: %s'%self.tuningSelection.get_value(), style={'text-align':'center'})
-		self.loading_animation_text9 = gui.Label('NFS Enabled? %s'%str(nfsEnabled), style={'text-align':'center'})
-		self.loading_animation_text10 = gui.Label('CTDB Enabled? %s'%str(ctdbEnabled), style={'text-align':'center'})
-		self.loading_animation_widget.append(self.loading_animation_text)
-		self.loading_animation_widget.append(self.loading_animation_text2)
-		self.loading_animation_widget.append(self.loading_animation_text3)
-		self.loading_animation_widget.append(self.loading_animation_text4)
-		self.loading_animation_widget.append(self.loading_animation_text5)
-		self.loading_animation_widget.append(self.loading_animation_text6)
-		self.loading_animation_widget.append(self.loading_animation_text7)
-		self.loading_animation_widget.append(self.loading_animation_text8)
-		self.loading_animation_widget.append(self.loading_animation_text10)
-		self.loading_animation_widget.append(self.loading_animation_text9)
-		self.set_root_widget(self.loading_animation_widget)
-		thread = Thread(target = simulated_long_time_task, args = (self, ))
-		thread.start()
 		self.saveHosts()
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
@@ -1076,6 +1084,31 @@ class FortyFiveDash(App):
 					print "Error 402: Name in use"
 					self.thread_finished()
 					return 0
+		self.loading_animation_widget.empty()
+		self.loading_animation_text = gui.Label('%s is being made'%self.nameInput.get_text(), style={'text-align':'center'})
+		self.loading_animation_text2 = gui.Label('You can follow playbook in terminal', style={'text-align':'center'})
+		self.loading_animation_text3 = gui.Label('RAID level: %s'%self.raidSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text4 = gui.Label('# of VDevs: %s'%self.vDevSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text5 = gui.Label('# of bricks: %s'%self.brickSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text6 = gui.Label('# of drives: %s'%self.driveSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text7 = gui.Label('Gluster Configuation: %s'%self.glusterSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text8 = gui.Label('Tuning profile: %s'%self.tuningSelection.get_value(), style={'text-align':'center'})
+		self.loading_animation_text9 = gui.Label('NFS Enabled? %s'%str(nfsEnabled), style={'text-align':'center'})
+		self.loading_animation_text10 = gui.Label('CTDB Enabled? %s'%str(ctdbEnabled), style={'text-align':'center'})
+		self.loading_animation_widget.append(self.loading_animation_text)
+		self.loading_animation_widget.append(self.loading_animation_text2)
+		self.loading_animation_widget.append(self.loading_animation_text3)
+		self.loading_animation_widget.append(self.loading_animation_text4)
+		self.loading_animation_widget.append(self.loading_animation_text5)
+		self.loading_animation_widget.append(self.loading_animation_text6)
+		self.loading_animation_widget.append(self.loading_animation_text7)
+		self.loading_animation_widget.append(self.loading_animation_text8)
+		self.loading_animation_widget.append(self.loading_animation_text10)
+		self.loading_animation_widget.append(self.loading_animation_text9)
+		self.set_root_widget(self.loading_animation_widget)
+		thread = Thread(target = simulated_long_time_task, args = (self, ))
+		
+		thread.start()
 		estimatedTime = random.uniform(79.4, 90.0)
 		if nfsEnabled == True:
 			estimatedTime = estimatedTime + 30
@@ -1101,7 +1134,7 @@ class FortyFiveDash(App):
 					self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
 				else:
 					self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
-		else:
+		else: #--------------------------------------ON SUCCESSFUL CREATE----------------------------------
 			currentVolumeList = newEntries
 			subprocess.call(['systemctl start NetworkManager'], shell=True)
 			noVolumes = False
@@ -1111,38 +1144,19 @@ class FortyFiveDash(App):
 				self.startButton.set_text('Start %s'%choice)
 				self.stopButton.set_text('Stop %s'%choice)
 				self.deleteButton.set_text('Delete %s'%choice)
+			self.hostsBrickDict[self.nameInput.get_text()] = self.goodRange
+			print self.hostsBrickDict
+			self.goodRange = []
 			self.updateVolumeLists()
 			self.updateMonitorTables()
 			self.overviewTableUpdate()
 			self.updateZpools()
 			self.detailTable.empty()
 			self.detailTable.append_from_list(self.detailText())
+			bConf = open('/opt/45dash/brick.conf','w')
+			bConf.write(str(self.hostsBrickDict))
+			bConf.close()
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
-			newPort = self.portEntry.get_text()
-			newUsername = self.usernameEntry.get_text()
-			newPassword = self.passwordEntry.get_text()
-			newColor = self.defaultColorPicker.get_value()
-			if newPort > 8099 or newPort < 8000:
-				print "Error 404: Port ID must only be between 8000 and 8099"
-				self.notification_message("Error 404", "Port ID must only be between 8000 and 8099")
-				self.thread_finished()
-				return 0
-			for char in newUsername:
-				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
-					print 'Error 405: Username must be alphanumeric'
-					self.notification_message('Error 405', "You can't use special characters (%s) in username"%(char))
-					self.thread_finished()
-					return 0
-			for char in newPassword:
-				if (char < '0' or char > 'z') or (char > '9' and char < 'A') or (char > 'Z' and char < 'a'): 
-					print 'Error 406: Password must be alphanumeric'
-					self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
-					self.thread_finished()
-					return 0
-			conf = open('45dash.conf', 'w+')
-			lastBrick = int(lastBrick) + int(self.brickSelection.get_value())
-			conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nlastBrick=%s\n"%(int(newPort), newUsername, newPassword, newColor, int(lastBrick)))
-			conf.close() 
 			self.thread_finished()
 		if entries1 != 0:
 			self.updateVolumeLists()
