@@ -5,7 +5,7 @@ from threading import Thread
 from time import sleep
 
 #------------------------------------------------------------------------------------------------------------------
-rConf = open('/opt/45dash/45dash.conf','r')
+rConf = open('/opt/45dash/etc/45dash.conf','r')
 content = rConf.readlines()
 global noVolumes, noZpools, ctdbEnabled, nfsEnabled, ctdbText, nfsText, stopIsConfirmed , deleteIsConfirmed, vvEnabled, vv, badDrives, hostBricks
 badDrives = []
@@ -26,7 +26,7 @@ username = str(content[1]).replace("username=","").strip("\n")
 password = str(content[2]).replace("password=","").strip("\n")
 baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
 rConf.close()
-bConf = open('/opt/45dash/bricks.conf','r')
+bConf = open('/opt/45dash/etc/bricks.conf','r')
 content2 = bConf.readlines()
 hostsBrickDict = (content2[0]).replace("hostsBrickDict=",'').strip("\n")
 bConf.close()
@@ -803,7 +803,7 @@ class FortyFiveDash(App):
 				print 'Error 406: Password must be alphanumeric'
 				self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
 				return 0
-		conf = open('45dash.conf', 'w+')
+		conf = open('/opt/45dash/etc/45dash.conf', 'w+')
 		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nhostsBrickDict=%s\n"%(int(newPort), newUsername, newPassword, newColor, hostsBrickDict))
 		conf.close() 
 	#_____________________________________________________________________________________________________________
@@ -1003,45 +1003,6 @@ class FortyFiveDash(App):
 
 		self.goodRange =  goodRange[0:bricksNeeded]
 
-	def gDeployFileBricks(self):
-		self.brickDirectories()
-		global hostsList, numHosts
-		lastBrick = 10
-		hosts = []
-		for num in range(1, numHosts+1):
-			hosts.append(hostsInputContainer.children[num].get_text())
-		f = open('deploy-cluster-bricks.conf', 'w+')
-		bricks = self.brickSelection.get_value()
-		glusterConfig = self.glusterSelection.get_value()
-		glusterName = self.nameInput.get_text()
-		mkarbcmd = "/opt/gtools/bin/mkarb -b %d"%int(bricks)
-		for num in range(1, numHosts+1):
-			mkarbcmd = mkarbcmd + " -n %s"%(hostsInputContainer.children[num].get_text())
-		r = subprocess.Popen(mkarbcmd, shell=True, stdout=subprocess.PIPE).stdout
-		mkarb = r.read()
-		tuneProfile = self.tuningSelection.get_value()
-		f.write("[volume1]\naction=create\nvolname=%s\n"%glusterName)
-		if glusterConfig == 'Distributed':
-			mkarb = ""
-			for host in hosts:
-				for i in range(int(lastBrick)+1, int(bricks)+int(lastBrick)+1):
-					mkarb = mkarb+host+":/zpool/vol"+str(i)+"/brick,"
-					lastBrick = int(lastBrick) + 1
-			f.write("replica_count=0\nforce=yes\n")
-			if tuneProfile == 'SMB filesharing':
-				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\n")
-			elif tuneProfile == 'Virtualization':
-				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\n")
-			f.write("brick_dirs=%s"%mkarb)
-		if glusterConfig == 'Distributed Replicated':
-			f.write("replica_count=3\narbiter_count=1\nforce=yes\nkey=performance.parallel-readdir, network.inode-lru-limit, performance.md-cache-timeout, performance.cache-invalidation, performance.stat-prefetch, features.cache-invalidation-timeout, features.cache-invalidation, performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
-			if tuneProfile == 'SMB filesharing':
-				f.write("key=performance.parallel-readdir,network.inode-lru-limit,performance.md-cache-timeout,performance.cache-invalidation,performance.stat-prefetch,features.cache-invalidation-timeout,features.cache-invalidation,performance.cache-samba-metadata\nvalue=on,50000,600,on,on,600,on,on\nbrick_dirs=%s"%mkarb)
-			elif tuneProfile == 'Virtualization':
-				f.write("key=group,storage.owner-uid,storage.owner-gid,network.ping-timeout,performance.strict-o-direct,network.remote-dio,cluster.granular-entry-heal,features.shard-block-size\nvalue=virt,36,36,30,on,off,enable,64MB\nbrick_dirs=%s"%mkarb)
-		f.write(ctdbText)
-		f.write("\n\n"+nfsText)
-		f.close()
 
 	def toggleDebugging(self, widget):
 		global vv, vvEnabled
@@ -1057,7 +1018,7 @@ class FortyFiveDash(App):
 			vvEnabled = False
 
 	def createPress(self, widget):
-		global lastBrick, hostsConf, noVolumes, vv, mainContainer
+		global hostsConf, noVolumes, vv, mainContainer
 		initalNoVolumes = noVolumes
 		self.saveHosts()
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
@@ -1122,18 +1083,10 @@ class FortyFiveDash(App):
 		totalTime = end-start
 		newEntries = len(self.retrieveVolumes())
 		if entries1 == newEntries:
-			if not isRetry:
-				self.notification_message("Error!", "Don't know what happened but %s couldn't be made. May have been an issue with brick directory, trying again"%self.nameInput.get_text())
-				lastBrick = lastBrick+20
-				self.gDeployFileBricks()
-				subprocess.call(['gdeploy -c deploy-cluster-bricks.conf %s'%vv], shell=True)
-				isRetry = True
-				totalTime = totalTime*2
-			if isRetry:
-				if len(self.retrieveVolumes()) == newEntries:
-					self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
-				else:
-					self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
+			if len(self.retrieveVolumes()) == newEntries:
+				self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
+			else:
+				self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
 		else: #--------------------------------------ON SUCCESSFUL CREATE----------------------------------
 			currentVolumeList = newEntries
 			subprocess.call(['systemctl start NetworkManager'], shell=True)
@@ -1153,7 +1106,7 @@ class FortyFiveDash(App):
 			self.updateZpools()
 			self.detailTable.empty()
 			self.detailTable.append_from_list(self.detailText())
-			bConf = open('/opt/45dash/brick.conf','w')
+			bConf = open('/opt/45dash/etc/bricks.conf','w+')
 			bConf.write(str(self.hostsBrickDict))
 			bConf.close()
 			self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
