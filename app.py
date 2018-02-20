@@ -1,6 +1,6 @@
 import remi.gui as gui
 from remi import start, App
-import platform, socket, random, re, subprocess, sys, tempfile, os, time, random, ast
+import platform, socket, random, re, subprocess, sys, tempfile, os, time, random, ast, datetime
 from threading import Thread
 from time import sleep
 
@@ -704,9 +704,11 @@ class FortyFiveDash(App):
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Functions-----------------------------------------------------
 	def retrieveVolumes(self):
-		subprocess.call(['cd ~'], shell=True)
 		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
 		glusters = s.read().splitlines()
+		logFile = open("/opt/45Dash/etc/45Dash.log", "a+")
+		logFile.write('%s,%s,%s\t%s,%s\t Volume List Retrieved'%(datetime.month, datetime.day, datetime.year, datetime.hour, datetime.minute))
+		logFile.close()
 		return glusters
 
 	def updateVolumeLists(self):
@@ -1097,6 +1099,10 @@ class FortyFiveDash(App):
 				self.startButton.set_text('Start %s'%choice)
 				self.stopButton.set_text('Stop %s'%choice)
 				self.deleteButton.set_text('Delete %s'%choice)
+			for entry in self.goodRange:
+				entry2 = 'vol%d'%entry
+				self.goodRange2.append(entry2)
+			self.googRange = self.goodRange2
 			self.hostsBrickDict[self.nameInput.get_text()] = self.goodRange
 			print self.hostsBrickDict
 			self.goodRange = []
