@@ -99,6 +99,10 @@ class FortyFiveDash(App):
 		subprocess.call(["dmap -qs 60"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
 		global brick, choice, hostsBrickDict
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write("\n" + datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAPPLICATION STARTED"))
+		logFile.write("\n")
+		logFile.close()
 		#---------------------------------------Brick Dirs--------------------------------------------------------
 		self.hostsBrickDict = ast.literal_eval(hostsBrickDict)
 		self.volumesInUse = []
@@ -160,6 +164,11 @@ class FortyFiveDash(App):
 		self.lclHost2 = gui.TableItem(localHost)
 		self.lclHostRow.append(self.lclHost)
 		self.lclHostRow.append(self.lclHost2)
+		self.lclSerial = gui.TableRow()
+		self.lclSerial1 = gui.TableItem(localHost + " Serial Number :")
+		self.lclSerial2 = gui.TableItem((subprocess.Popen(['dmidecode -s system-serial-number'],  shell=True, stdout=subprocess.PIPE).stdout).read())
+		self.lclSerial.append(self.lclSerial1)
+		self.lclSerial.append(self.lclSerial2)
 		self.ipAddrRow = gui.TableRow()
 		self.ipAddr = gui.TableItem('IP Address	:')
 		self.ipAddr2 = gui.TableItem(socket.gethostbyname(socket.gethostname()))
@@ -206,6 +215,7 @@ class FortyFiveDash(App):
 		self.numZpoolRow.append(self.numZpool1)	
 		self.numZpoolRow.append(self.numZpool2)
 		self.overviewTable.append(self.lclHostRow)
+		self.overviewTable.append(self.lclSerial)
 		self.overviewTable.append(self.ipAddrRow)
 		self.overviewTable.append(self.connectedHostsRow)
 		for entry in connectedHostNames:
@@ -706,8 +716,9 @@ class FortyFiveDash(App):
 	def retrieveVolumes(self):
 		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
 		glusters = s.read().splitlines()
-		logFile = open("/opt/45Dash/etc/45Dash.log", "a+")
-		logFile.write('%s,%s,%s\t%s,%s\t Volume List Retrieved'%(datetime.month, datetime.day, datetime.year, datetime.hour, datetime.minute))
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M"  + "\tRetrieved Volumes"))
+		logFile.write("\n")
 		logFile.close()
 		return glusters
 
@@ -728,6 +739,10 @@ class FortyFiveDash(App):
 			self.volumeList.append(self.volume)
 			self.activeVolumeList.append(self.volume)
 			self.drivesVolumeList.append(self.volume)
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tVolume Lists Updated"))
+		logFile.write("\n")
+		logFile.close()
 	
 	def updateMonitorTables(self):
 		if noVolumes:
@@ -774,6 +789,10 @@ class FortyFiveDash(App):
 			self.infoLine.append(self.infoItem1)
 			self.infoLine.append(self.infoItem2)
 			self.infoTable.append(self.infoLine) #Updates monitor tables by emptying and recreating it
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tMonitor Tables Updated"))
+		logFile.write("\n")
+		logFile.close()
 
 	def overviewTableUpdate(self):
 		self.lclHost2.set_text((socket.gethostname()))
@@ -785,6 +804,10 @@ class FortyFiveDash(App):
 		self.numActDrives2.set_text(self.getNumActDrives())
 		self.numStDrives2.set_text(self.getNumStDrives())
 		self.numZpool2.set_text(len(self.getZpoolStats())-1)
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tOverview Table Updated"))
+		logFile.write("\n")
+		logFile.close()
 
 	def changeSettings(self, widget):
 		newPort = self.portEntry.get_text()
@@ -808,6 +831,10 @@ class FortyFiveDash(App):
 		conf = open('/opt/45dash/etc/45dash.conf', 'w+')
 		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nhostsBrickDict=%s\n"%(int(newPort), newUsername, newPassword, newColor, hostsBrickDict))
 		conf.close() 
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tConfiguration File Updated"))
+		logFile.write("\n")
+		logFile.close()
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
 	def getNumActVolumes(self):
@@ -879,6 +906,10 @@ class FortyFiveDash(App):
 		hostsConf = "[hosts]\n"
 		for entry in hosts:
 			hostsConf = hostsConf + "%s\n"%entry
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tHosts Configured"))
+		logFile.write("\n")
+		logFile.close()
 
 	def hostsInputDropDownFunction(self, widget, selection):
 		global localHost, numHosts, hostsList
@@ -922,10 +953,18 @@ class FortyFiveDash(App):
 			self.advancedContainer.append(self.arbiterLabel)
 			self.advancedContainer.append(self.arbiterInput)
 			self.glusterDetailsContainer.append(self.advancedContainer)
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAdvanced Options Enabled"))
+			logFile.write("\n")
+			logFile.close()
 		elif isAdvanced == True:
 			self.advancedContainer.empty()
 			self.advancedCheckButton.set_text('Show Advanced Options')
 			isAdvanced = False
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAdvanced Options Disabled"))
+			logFile.write("\n")
+			logFile.close()
 
 	def reset(self, widget):
 		self.nameInput.set_text('NewVolume')
@@ -935,6 +974,10 @@ class FortyFiveDash(App):
 		self.driveSelection.select_by_value(str(len(self.driveMapTable())-1))
 		self.glusterSelection.select_by_value('Distributed')
 		self.tuningSelection.select_by_value('SMB Filesharing')
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tGluster options reset"))
+		logFile.write("\n")
+		logFile.close()
 
 	def gDeployFile(self):
 		global ctdbText
@@ -992,6 +1035,10 @@ class FortyFiveDash(App):
 		f.write(ctdbText)
 		f.write("\n\n"+nfsText)
 		f.close()
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t/opt/45dash/deploy-cluster.conf created"))
+		logFile.write("\n")
+		logFile.close()
 	def brickDirectories(self):
 		vols = self.volumesInUse
 		arbs = self.arbsInUse
@@ -1013,19 +1060,35 @@ class FortyFiveDash(App):
 			self.debuggingButton.set_text('Disable Terminal Debugging')
 			self.notification_message('Action','Terminal debugging enabled')
 			vvEnabled = True
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tTerminal Debugging Enabled"))
+			logFile.write("\n")
+			logFile.close()
 		elif vvEnabled == True:
 			vv = ''
 			self.debuggingButton.set_text('Enable Terminal Debugging')
 			self.notification_message('Action','Terminal debugging disabled')
 			vvEnabled = False
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tTerminal Debugging Disabled"))
+			logFile.write("\n")
+			logFile.close()
 
 	def createPress(self, widget):
 		global hostsConf, noVolumes, vv, mainContainer
 		initalNoVolumes = noVolumes
 		self.saveHosts()
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAttempting to create %s..."%self.nameInput.get_text()))
+		logFile.write("\n")
+		logFile.close()
 		if (int(self.brickSelection.get_value()) % int(numHosts) != 0) and (ctdbEnabled == True):
 			self.notification_message("Error",'# of bricks must be a multiple of replica count')
 			self.thread_finished()
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s creation failed, #of bricks must be a multiple of replica count"%self.nameInput.get_text()))
+			logFile.write("\n")
+			logFile.close()
 			return 0
 		isRetry = False
 		name = self.nameInput.get_text()
@@ -1034,6 +1097,10 @@ class FortyFiveDash(App):
 				self.notification_message('Error 401', "You can't use special characters (%s) in gluster name"%(char))
 				print "Error 401: Invalid Character used for a name"
 				self.thread_finished()
+				logFile = open("/opt/45dash/etc/45Dash.log", "a")
+				logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s creation failed, special characters can't be used in gluster name"%self.nameInput.get_text()))
+				logFile.write("\n")
+				logFile.close()
 				return 0
 		start = time.time()
 		if hostsConf == 401:
@@ -1046,6 +1113,10 @@ class FortyFiveDash(App):
 					self.notification_message("Error 402", "The name %s is already in use by another gluster"%(name))
 					print "Error 402: Name in use"
 					self.thread_finished()
+					logFile = open("/opt/45dash/etc/45Dash.log", "a")
+					logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s creation failed, name in use"%self.nameInput.get_text()))
+					logFile.write("\n")
+					logFile.close()
 					return 0
 		self.loading_animation_widget.empty()
 		self.loading_animation_text = gui.Label('%s is being made'%self.nameInput.get_text(), style={'text-align':'center'})
@@ -1087,8 +1158,16 @@ class FortyFiveDash(App):
 		if entries1 == newEntries:
 			if len(self.retrieveVolumes()) == newEntries:
 				self.notification_message("Error!", "Don't know what happened but %s couldn't be made."%self.nameInput.get_text())
+				logFile = open("/opt/45dash/etc/45Dash.log", "a")
+				logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s creation failed"%self.nameInput.get_text()))
+				logFile.write("\n")
+				logFile.close()
 			else:
 				self.notification_message("Success!", "%s has been made, in %s seconds!"%(self.nameInput.get_text(), str(round(totalTime, 2))))
+				logFile = open("/opt/45dash/etc/45Dash.log", "a")
+				logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s creation success"%self.nameInput.get_text()))
+				logFile.write("\n")
+				logFile.close()
 		else: #--------------------------------------ON SUCCESSFUL CREATE----------------------------------
 			currentVolumeList = newEntries
 			subprocess.call(['systemctl start NetworkManager'], shell=True)
@@ -1138,6 +1217,11 @@ class FortyFiveDash(App):
 			self.enableCtdbButton.set_text('Enable CTDB')
 			ctdbEnabled = False
 			ctdbText = ' '
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tCTDB Disabled"))
+			logFile.write("\n")
+			logFile.close()
+
 		elif ctdbEnabled == False:
 			try:
 				numHosts
@@ -1165,7 +1249,10 @@ class FortyFiveDash(App):
 			for entry in connectedHostNames:
 				ctdbText=ctdbText+socket.gethostbyname(entry)+','
 			ctdbText = ctdbText+"\nvolname=ctdb\n\n[script4]\naction=execute\nfile=/opt/gtools/bin/ctdb-config-d /gluster/lock -g -m smb -w"
-			print ctdbText
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tCTDB Enabled"))
+			logFile.write("\n")
+			logFile.close()
 
 	def numGaneshaIPDropDownSelected(self, widget, selection):
 		global numGanesha
@@ -1195,6 +1282,11 @@ class FortyFiveDash(App):
 			self.enableGaneshaButton.set_text('Enable NFS Ganesha')
 			nfsEnabled = False
 			nfsText = ' '
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tNFS Disabled"))
+			logFile.write("\n")
+			logFile.close()
+
 		elif nfsEnabled == False:
 			nfsText = "[nfs-ganesha]\naction=create-cluster\nha-name=ganesha-ha-360\ncluster-nodes="
 			hosts = []
@@ -1216,7 +1308,11 @@ class FortyFiveDash(App):
 			nfsEnabled = True
 			self.enableGaneshaButton.set_text('Disable NFS Ganesha')
 			self.notification_message('Action','NFS Ganesha Enabled')
-		print nfsText
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tNFS Enabled"))
+			logFile.write("\n")
+			logFile.close()
+
 
 	#-----------------------------------------------Monitor Functions---------------------------------------------
 	def infoTableFunction(self, choice):
@@ -1255,6 +1351,11 @@ class FortyFiveDash(App):
 		self.deleteButton.set_text("Delete %s"%choice)
 		self.updateVolumeLists()
 		self.updateMonitorTables()
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s selected from monitor list"%choice))
+		logFile.write("\n")
+		logFile.close()
+
 
 	def startGluster(self, widget):
 		self.notification_message("Action","%s will be started"%choice)
@@ -1266,6 +1367,11 @@ class FortyFiveDash(App):
 		self.numActVolumes2.set_text((str(numActVol)))
 		self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
 		self.notification_message("Success", "%s has been started"%choice)
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s started"%choice))
+		logFile.write("\n")
+		logFile.close()
+
 	
 	def stopGluster(self, widget):
 		global stopIsConfirmed
@@ -1285,6 +1391,11 @@ class FortyFiveDash(App):
 					self.numActVolumes2.set_text((str(numActVol)))
 					self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))
 					self.notification_message("Success", "Gluster Volume %s has been stopped"%choice)
+					logFile = open("/opt/45dash/etc/45Dash.log", "a")
+					logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s stopped"%choice))
+					logFile.write("\n")
+					logFile.close()
+
 				if currentStatus != 'stopped':
 					self.notification_message("Error!", "Gluster volume %s couldn't be stopped"%choice)
 			else:
@@ -1295,6 +1406,11 @@ class FortyFiveDash(App):
 		elif stopIsConfirmed == False:
 			self.notification_message("Warning!","Deleting a gluster will make its data inaccesible, press again to confirm")
 			stopIsConfirmed = True
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAttempting to stop %s"%choice))
+			logFile.write("\n")
+			logFile.close()
+
 	
 	def deleteGluster(self, widget):
 		global choice, noVolumes
@@ -1320,15 +1436,30 @@ class FortyFiveDash(App):
 			self.numStVolumes2.set_text(str(int(numVol)-int(numActVol)))	
 			self.updateVolumeLists()
 			self.notification_message("Success", "Gluster Volume %s has been deleted"%choice)
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s deleted"%choice))
+			logFile.write("\n")
+			logFile.close()
+
 			return 0
 		elif not deleteIsConfirmed:
 			self.notification_message("Warning", "Deleting a volume can be dangerous, press again to continue")
 			deleteIsConfirmed = True
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAttemping to delete %s"%choice))
+			logFile.write("\n")
+			logFile.close()
+
 			return 0
 	
 	def statusTableFunction(self):
 		if noVolumes == True:
 			return [('No Volumes','','','','','','')]
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tStatus Table Updated - No Volumes"))
+			logFile.write("\n")
+			logFile.close()
+
 		status = self.infoTableFunction(choice)[3][1].strip(" ").lower()
 		if status == "started":
 			r=subprocess.Popen(['gluster volume status %s' % choice], shell=True, stdout=subprocess.PIPE).stdout
@@ -1352,6 +1483,10 @@ class FortyFiveDash(App):
 			for entry in lines2:
 				tupleEntry = tuple(entry)
 				entries.append(tupleEntry)
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tStatus Table Updated with %s as active volume"%choice))
+			logFile.write("\n")
+			logFile.close()
 
 			return entries
 
@@ -1364,6 +1499,10 @@ class FortyFiveDash(App):
 		choice = self.drivesVolumeList.children[selection].get_text()
 		self.detailTable.empty()
 		self.detailTable.append_from_list(self.detailText())
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s selected from drives list"%choice))
+		logFile.write("\n")
+		logFile.close()
 
 	def detailText(self):
 		r = subprocess.Popen(["gluster volume status %s detail | grep Space"%choice],stdout=subprocess.PIPE, shell=True).stdout
@@ -1381,6 +1520,10 @@ class FortyFiveDash(App):
 		for line in bricks:
 			splitBricks = re.split(r"/", line)
 			bricks2.append(tuple(splitBricks))
+		logFile = open("/opt/45dash/etc/45Dash.log", "a")
+		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tMemory Space Table updated with %s as choice"%choice))
+		logFile.write("\n")
+		logFile.close()
 		return bricks2
 
 	def driveMapTable(self):
@@ -1667,7 +1810,6 @@ class FortyFiveDash(App):
 				self.zpoolStatusLine.append(self.zpoolWrite)
 				self.zpoolStatusLine.append(self.zpoolCksum)
 				self.zpoolStatusTable.append(self.zpoolStatusLine)
-
 
 ip = str(socket.gethostbyname(socket.gethostname()))
 
