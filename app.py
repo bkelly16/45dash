@@ -22,14 +22,13 @@ nfsText = ''
 ganeshaList = []
 stopIsConfirmed = False
 deleteIsConfirmed = False
-global port, username, password, baseColor
+global port, username, password
 port = int(str(content[0]).replace("port=","").strip("\n"))
 username = str(content[1]).replace("username=","").strip("\n")
 password = str(content[2]).replace("password=","").strip("\n")
-baseColor = str(content[3]).replace("defaultcolor=",'').strip("\n")
-isReceivingEmails = bool(content[4]).replace("receiveEmails=",'').strip("\n")
+isReceivingEmails = bool(content[3].replace("receiveEmails=",'').strip("\n"))
 if isReceivingEmails:
-	email = str(content[5].replace("email=",'')).strip("\n")
+	email = str(content[4].replace("email=",'').strip("\n"))
 rConf.close()
 bConf = open('/opt/45dash/etc/bricks.conf','r')
 content2 = bConf.readlines()
@@ -98,7 +97,8 @@ class FortyFiveDash(App):
 	#--------------------------------------------Create Functions---------------------------------------------------
 	
 	def main(self):
-		self.hourlyUpdate()
+		if isReceivingEmails:
+			self.hourlyUpdate()
 
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
@@ -146,7 +146,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Main Menu Configuration -------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Volume List--------------------------------------------------------
-		self.mainMenuVolumeContainer = gui.Widget(width='20%', height=700,style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.mainMenuVolumeContainer = gui.Widget(width='20%', height=700,style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.activeVolumeLabel = gui.Label('Active Volumes', width='100%', height=30)
 		self.activeVolumeList = gui.ListView(width='100%',  height=670, style={'float':'left'})
 		self.active_Volume_List = self.retrieveVolumes()
@@ -163,7 +163,7 @@ class FortyFiveDash(App):
 		self.mainMenuVolumeContainer.append(self.activeVolumeList)
 		#--------------------------------------Overview Table-----------------------------------------------------------
 		global localhost
-		self.overviewTableContainer = gui.Widget(width='40%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.overviewTableContainer = gui.Widget(width='40%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.overviewTableLabel = gui.Label("Overview", width='100%')
 		self.overviewTable = gui.Table(width='100%',style={'text-align':'left'})
 		self.lclHostRow = gui.TableRow()
@@ -256,7 +256,7 @@ class FortyFiveDash(App):
 		self.overviewTableContainer.append(self.overviewTableLabel)
 		self.overviewTableContainer.append(self.overviewTable)
 		#--------------------------------------Settings----------------------------------------------------------
-		self.settingsContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.settingsContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.settingsLabel = gui.Label('General Settings', width='100%')
 		self.usernameLabel = gui.Label('Username:', width='70%', height=30, style={'float':'left'})
 		self.usernameEntry = gui.TextInput(width='30%', height=30, style={'float':'right'})
@@ -267,8 +267,6 @@ class FortyFiveDash(App):
 		self.portLabel = gui.Label('Port ID:', width='70%', height=30, style={'float':'left'})
 		self.portEntry = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.portEntry.set_text(port)
-		self.defaultColorLabel = gui.Label('Choose default color', width='100%', height=30, style={'float':'left'})
-		self.defaultColorPicker = gui.ColorPicker(baseColor, width='100%', height=30)
 		self.saveSettingsButton = gui.Button('Save Changes (Restart UI to apply changes)', width='100%', height=30)
 		self.saveSettingsButton.set_on_click_listener(self.changeSettings)
 		self.clearTerminalButton = gui.Button('Clear Terminal', width='100%', height=30)
@@ -279,9 +277,7 @@ class FortyFiveDash(App):
 		self.settingsContainer.append(self.passwordLabel)
 		self.settingsContainer.append(self.passwordEntry)
 		self.settingsContainer.append(self.portLabel)
-		self.settingsContainer.append(self.portEntry)
-		self.settingsContainer.append(self.defaultColorLabel)	
-		self.settingsContainer.append(self.defaultColorPicker)		
+		self.settingsContainer.append(self.portEntry)		
 		self.settingsContainer.append(self.saveSettingsButton)
 		self.settingsContainer.append(self.clearTerminalButton)
 		#_________________________________________________________________________________________________________
@@ -289,7 +285,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Host inputs--------------------------------------------------------
 		global createHostsContainer
-		createHostsContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		createHostsContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.hostsLabel = gui.Label('Hosts Configuration',width='100%', height=30)
 		self.hostsInputLabel = gui.Label('Select Number of hosts to be connected', width='70%', height=30, style={'float':'left'})
 		self.hostsInputDropDown = gui.DropDown(width='30%', height=30, style={'float':'left'})
@@ -303,7 +299,7 @@ class FortyFiveDash(App):
 		createHostsContainer.append(self.hostsInputDropDown)
 
 		#--------------------------------------Gluster details----------------------------------------------------
-		self.glusterDetailsContainer = gui.Widget(width='30%', height=600,  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.glusterDetailsContainer = gui.Widget(width='30%', height=600,  style={'margin':'0px auto','padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.glusterDetailsLabel = gui.Label('Gluster Details', height=30, width='100%', style={'float':'center'})
 		self.nameLabel = gui.Label('Name of new volume:', width='70%', height=30, style={'float':'left'})
 		self.nameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
@@ -356,7 +352,7 @@ class FortyFiveDash(App):
 		self.glusterDetailsContainer.append(self.debuggingButton)
 		self.glusterDetailsContainer.append(self.createButton)
 		#--------------------------------------Sharing protocols--------------------------------------------------
-		self.sharingContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.sharingContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.GaneshaiHostContainer = gui.Widget(width='100%')
 		self.sharingLabel = gui.Label('Sharing Protocols', width='100%', height=30, style={'float':'center'})
 		self.publicIPLabel = gui.Label('Enter Public IP:', width='70%', height=30, style={'float':'left'})
@@ -384,7 +380,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create - Zpool ----------------------------------------------------
 		#_________________________________________________________________________________________________________
-		self.zpoolDetailsContainer = gui.Widget(width='30%', height='100%',  style={'margin':'0px auto','padding':'5px','border':'2px solid %s'%baseColor,'float':'center','display':'block','overflow':'auto'})
+		self.zpoolDetailsContainer = gui.Widget(width='30%', height='100%',  style={'margin':'0px auto','padding':'5px','float':'center','display':'block','overflow':'auto'})
 		self.zpoolNameLabel = gui.Label('Name of new zpool:', width='70%', height=30, style={'float':'left'})
 		self.zpoolNameInput = gui.TextInput(width='30%', height=30, style={'float':'right'})
 		self.zpoolNameInput.set_text('zpool')
@@ -422,7 +418,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Monitor - Volume Configuation--------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Volume List-------------------------------------------------------
-		self.monitorVolumeContainer = gui.Widget(width='10%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorVolumeContainer = gui.Widget(width='10%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.volumeLabel = gui.Label('Active Volumes', width='100%', height=30)
 		self.volumeList = gui.ListView(width='100%', style={'float':'left'})
 		for volume in self.active_Volume_List:
@@ -445,7 +441,7 @@ class FortyFiveDash(App):
 		self.monitorVolumeContainer.append(self.stopButton)
 		self.monitorVolumeContainer.append(self.deleteButton)
 		#--------------------------------------Volume info Table---------------------------------------------------
-		self.monitorInfoContainer = gui.Widget(width='49%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorInfoContainer = gui.Widget(width='49%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.infoLabel = gui.Label('Volume Info', width='100%', height=30)
 		self.infoTable = gui.Table(width='100%',style={'text-align':'left'})
 		if noVolumes == True:
@@ -466,7 +462,7 @@ class FortyFiveDash(App):
 		self.monitorInfoContainer.append(self.infoLabel)
 		self.monitorInfoContainer.append(self.infoTable)
 		#--------------------------------------Volume Status Table-----------------------------------------------
-		self.monitorStatusContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorStatusContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.statusLabel = gui.Label('Volume Status',width="100%", height=30)
 		self.statusTable = gui.Table(width='100%')
 		self.statusTableTitle = gui.TableRow()
@@ -512,7 +508,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Monitor - Drives --------------------------------------------------
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Drive Info --------------------------------------------------------
-		self.drivesVolumeListContainer = gui.Widget(width='20%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.drivesVolumeListContainer = gui.Widget(width='20%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.drivesVolumeListLabel = gui.Label('Active Volumes', height=30, width='100%')
 		self.drivesVolumeList = gui.ListView()
 		for volume in self.retrieveVolumes():
@@ -526,7 +522,7 @@ class FortyFiveDash(App):
 		self.drivesVolumeListContainer.append(self.drivesVolumeList)
 		self.drivesVolumeList.set_on_selection_listener(self.driveVolumeListSelected)
 		#-------------------------------------------------------------------------------------
-		self.monitorDrivesListContainer=gui.Widget(width='15%', height=450, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesListContainer=gui.Widget(width='15%', height=450, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.driveLabel = gui.Label('Drive Status', width='100%', height=20)
 		self.driveList = gui.ListView()
 		drive_List = self.driveMapTable()
@@ -557,14 +553,14 @@ class FortyFiveDash(App):
 		self.monitorDrivesListContainer.append(self.driveLabel)
 		self.monitorDrivesListContainer.append(self.driveList)
 		#--------------------------------------Drive info---------------------------------------------------------
-		self.monitorDrivesInfoContainer=gui.Widget(width='34%',height=450, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesInfoContainer=gui.Widget(width='34%',height=450, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.detailLabel = gui.Label('Brick Storage', width='100%', height=20)
 		self.detailTable = gui.Table(width='100%', style={'text-align':'left'})
 		self.detailTable.append_from_list(self.detailText())
 		self.monitorDrivesInfoContainer.append(self.detailLabel)
 		self.monitorDrivesInfoContainer.append(self.detailTable)
 		#--------------------------------------Drive Text Box-----------------------------------------------------
-		self.monitorDrivesTextBoxContainer = gui.Widget(width='26%', height=450, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesTextBoxContainer = gui.Widget(width='26%', height=450, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.driveInfoTextLabel = gui.Label('Drive Info', height=30, width='100%')
 		self.driveInfoTable = gui.Table(width='100%', style={'text-align':'left'})
 		self.driveInfoDefault = gui.TableRow()
@@ -574,7 +570,7 @@ class FortyFiveDash(App):
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTextLabel)
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTable)
 		#--------------------------------------Drive health box---------------------------------------------------
-		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.healthListLabel = gui.Label('Drive Health',width='100%', height=30)
 		self.healthTable = gui.Table(width='100%',style={'text-align':'left'})
 		healthStats = self.getDriveHealth()
@@ -592,7 +588,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Monitor ZPool------------------------------------------------------
 		#_________________________________________________________________________________________________________
-		self.monitorZpoolZpoolContainer = gui.Widget(width='35%', height=700, style={'padding':'5px','border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorZpoolZpoolContainer = gui.Widget(width='35%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.monitorZpoolLabel = gui.Label('Active Zpools (Select name of zpool to view)', width='100%', height=30)
 		self.monitorZpoolTable = gui.Table(width='100%')
 		if noZpools == True:
@@ -621,7 +617,7 @@ class FortyFiveDash(App):
 		self.monitorZpoolZpoolContainer.append(self.monitorZpoolTable)
 		self.monitorZpoolZpoolContainer.append(self.deleteZpoolButton)
 		#--------------------------------------Zpool status-------------------------------------------------------
-		self.monitorZpoolStatusContainer = gui.Widget(width='45%', height=700, style={'padding':'5px', 'border':'2px solid %s'%baseColor,'float':'left','display':'block','overflow':'auto'})
+		self.monitorZpoolStatusContainer = gui.Widget(width='45%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.zpoolStatusLabel = gui.Label('Zpool Status', width='100%', height=30)
 		self.zpoolStatusTable = gui.Table(width='100%')
 		if noZpools == True:
@@ -666,15 +662,14 @@ class FortyFiveDash(App):
 		global hostsInputContainer, mainContainer
 		mainContainer = gui.Widget(width='100%', height='100%')#,'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		mainContainer.add_class('MainContainer')
-		monitorContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		mainCreateContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		mainMenuContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		monitorVolumeContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		monitorDrivesContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor, 'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		monitorZpoolContainer = gui.Widget(width='100%', height='100%', style={ 'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		createContainer = gui.Widget(width='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		createZpoolContainer = gui.Widget(width='100%', height='100%', style={'background-color':'%s'%baseColor,'margin':'0px auto','display': 'block', 'overflow':'auto'})
-		brandingContainer = gui.Widget(width='100%', height=75)
+		monitorContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		mainCreateContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		mainMenuContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorVolumeContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorDrivesContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		monitorZpoolContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createContainer = gui.Widget(width='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
+		createZpoolContainer = gui.Widget(width='100%', height='100%', style={'margin':'0px auto','display': 'block', 'overflow':'auto'})
 		#--------------------------------------Main Menu----------------------------------------------------------
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		mainMenuContainer.append(self.overviewTableContainer)
@@ -701,8 +696,6 @@ class FortyFiveDash(App):
 		monitorZpoolContainer.append(self.monitorZpoolZpoolContainer)
 		monitorZpoolContainer.append(self.monitorZpoolStatusContainer)
 		#--------------------------------------Branding Container-------------------------------------------------
-		self.logo = gui.Image('/res/logo.png',width=250, height=75, style={'float':'left', 'padding-left':'5px'})
-		brandingContainer.append(self.logo)
 		#--------------------------------------Create TabBox -----------------------------------------------------
 		self.createTabBox = gui.TabBox()
 		self.createTabBox.add_class('CreateTabBox')
@@ -724,7 +717,6 @@ class FortyFiveDash(App):
 		self.mainTabBox.add_tab(monitorContainer, "Monitor", None)
 
 		#----------------------------------FINAL LAYOUT CONFIG----------------------------------------------------
-		mainContainer.append(brandingContainer)
 		mainContainer.append(self.mainTabBox)
 		return mainContainer
 
@@ -840,7 +832,6 @@ class FortyFiveDash(App):
 		newPort = self.portEntry.get_text()
 		newUsername = self.usernameEntry.get_text()
 		newPassword = self.passwordEntry.get_text()
-		newColor = self.defaultColorPicker.get_value()
 		if newPort > 8099 or newPort < 8000:
 			print "Error 404: Port ID must only be between 8000 and 8099"
 			self.notification_message("Error 404", "Port ID must only be between 8000 and 8099")
@@ -856,7 +847,7 @@ class FortyFiveDash(App):
 				self.notification_message('Error 406', "You can't use special characters (%s) in username"%(char))
 				return 0
 		conf = open('/opt/45dash/etc/45dash.conf', 'w+')
-		conf.write("port=%s\nusername=%s\npassword=%s\ndefaultcolor=%s\nhostsBrickDict=%s\n"%(int(newPort), newUsername, newPassword, newColor, hostsBrickDict))
+		conf.write("port=%s\nusername=%s\npassword=%s\n\n"%(int(newPort), newUsername, newPassword))
 		conf.close() 
 		logFile = open("/opt/45dash/etc/45Dash.log", "a")
 		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tConfiguration File Updated"))
@@ -1119,6 +1110,7 @@ class FortyFiveDash(App):
 						goodRange.append(num+number)
 
 		self.goodRange =  goodRange[0:bricksNeeded]
+		print goodRange
 
 	def toggleDebugging(self, widget):
 		global vv, vvEnabled
@@ -1246,6 +1238,7 @@ class FortyFiveDash(App):
 				self.stopButton.set_text('Stop %s'%choice)
 				self.deleteButton.set_text('Delete %s'%choice)
 			for entry in self.goodRange:
+				print entry
 				entry2 = 'vol%d'%entry
 				self.goodRange2.append(entry2)
 			self.googRange = self.goodRange2
