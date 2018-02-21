@@ -1,9 +1,11 @@
 import remi.gui as gui
 from remi import start, App
-import platform, socket, random, re, subprocess, sys, tempfile, os, time, random, ast, datetime
+import platform, socket, random, re, subprocess, sys, tempfile, os, time, random, ast, datetime, smtplib
 from threading import Thread
 from time import sleep
-
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+#from apscheduler.schedulers.blocking import BlockingScheduler
 #------------------------------------------------------------------------------------------------------------------
 rConf = open('/opt/45dash/etc/45dash.conf','r')
 content = rConf.readlines()
@@ -93,6 +95,8 @@ class FortyFiveDash(App):
 	#--------------------------------------------Create Functions---------------------------------------------------
 	
 	def main(self):
+		self.hourlyUpdate()
+
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' /opt/45dash/lsdevpy"], shell=True)
@@ -208,7 +212,17 @@ class FortyFiveDash(App):
 		self.numStDrives1 = gui.TableItem('Number of drives not in use	:')
 		self.numStDrives2 = gui.TableItem(self.getNumStDrives())
 		self.numStDrivesRow.append(self.numStDrives1)
-		self.numStDrivesRow.append(self.numStDrives2)	
+		self.numStDrivesRow.append(self.numStDrives2)
+		if str(self.getNumFailedDrives()) > 0:	
+			self.numFailedDrives = gui.TableRow(style={'background-color':'red'})
+			self.numFailedDrives1 = gui.TableItem('Number of drives likely to fail :', style={'color':'white'})
+			self.numFailedDrives2 = gui.TableItem(self.getNumFailedDrives(), style={'color':'white'})	
+		else:
+			self.numFailedDrives = gui.TableRow()
+			self.numFailedDrives1 = gui.TableItem('Number of drives likely to fail :')
+			self.numFailedDrives2 = gui.TableItem(self.getNumFailedDrives())	
+		self.numFailedDrives.append(self.numFailedDrives1)
+		self.numFailedDrives.append(self.numFailedDrives2)
 		self.numZpoolRow = gui.TableRow(style={'background-color':'Silver'})
 		self.numZpool1 = gui.TableItem('Number of Zpools 	:')
 		self.numZpool2 = gui.TableItem(len(self.getZpoolStats())-1)
@@ -234,6 +248,7 @@ class FortyFiveDash(App):
 		self.overviewTable.append(self.numDrivesRow)
 		self.overviewTable.append(self.numActDrivesRow)
 		self.overviewTable.append(self.numStDrivesRow)
+		self.overviewTable.append(self.numFailedDrives)
 		self.overviewTable.append(self.numZpoolRow)
 		self.overviewTableContainer.append(self.overviewTableLabel)
 		self.overviewTableContainer.append(self.overviewTable)
@@ -804,6 +819,15 @@ class FortyFiveDash(App):
 		self.numActDrives2.set_text(self.getNumActDrives())
 		self.numStDrives2.set_text(self.getNumStDrives())
 		self.numZpool2.set_text(len(self.getZpoolStats())-1)
+		self.numFailedDrives2.set_text(len(badDrives))
+		if len(badDrives) > 0:
+			self.numFailedDrives.style['background-color'] = 'red'
+			self.numFailedDrives1.style['color'] = 'white'
+			self.numFailedDrives2.style['color'] = 'white'
+		else:
+			self.numFailedDrives.style['background-color'] = 'white'
+			self.numFailedDrives1.style['color'] = 'black'
+			self.numFailedDrives2.style['color'] = 'black'
 		logFile = open("/opt/45dash/etc/45Dash.log", "a")
 		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tOverview Table Updated"))
 		logFile.write("\n")
@@ -835,6 +859,42 @@ class FortyFiveDash(App):
 		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tConfiguration File Updated"))
 		logFile.write("\n")
 		logFile.close()
+
+	def hourlyUpdate(self):
+		for entries in self.driveMapTable():
+			entry = entries[0].strip('*')
+			s = subprocess.Popen(['smartctl -a /dev/disk/by-vdev/%s | grep FAILED!'%entry], shell=True, stdout=subprocess.PIPE).stdout
+			line = s.read().splitlines()
+			if line == []:
+				continue
+			else:
+				self.notification_message('Warning!','Drive %s is likely to fail, save all data and replace drive'%entry)
+				badDrives.append(entry)
+		if len(badDrives) > 0:
+			fromaddr = 'rkk1919@gmail.com'
+			toaddr = 'rkochhar@protocase.com'
+			msg = MIMEMultipart()
+			msg['From'] = fromaddr
+			msg['To'] = toaddr
+			msg['Subject'] = 'Drive Failure'
+			body = 'WARNING! The following drives in your server (Serial Number: %s) are likely to fail within the next 24 hours:\n\n'%((subprocess.Popen(['dmidecode -s system-serial-number'],  shell=True, stdout=subprocess.PIPE).stdout).read().strip('\n'))
+			for drive in badDrives:
+				body = body + drive + '\n'
+			body = body + '\nIt is reccomended that you save all data on this drive and replace as soon as possible'
+			msg.attach(MIMEText(body, 'plain'))
+			server = smtplib.SMTP('smtp.gmail.com', 587)
+			server.ehlo()
+			server.starttls()
+			server.ehlo()
+			server.login('rkk1919@gmail.com', 'RohitK19')	
+			text = msg.as_string()
+			problems = server.sendmail('rkk@gmail.com', 'rkochhar@protocase.com', text)
+			server.quit()
+			logFile = open("/opt/45dash/etc/45Dash.log", "a")
+			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tBad drive found, email sent to %s"%toaddr))
+			logFile.write("\n")
+			logFile.close()		
+
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Main menu functions-------------------------------------------
 	def getNumActVolumes(self):
@@ -884,6 +944,10 @@ class FortyFiveDash(App):
 				if char1[1] != "*":
 					count = count + 1
 		return count
+
+	def getNumFailedDrives(self):
+		self.checkDrives()
+		return len(badDrives)
 	#-----------------------------------------------Create functions----------------------------------------------
 	def saveHosts(self):
 		global hostsConf, numHosts
@@ -1039,6 +1103,7 @@ class FortyFiveDash(App):
 		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t/opt/45dash/deploy-cluster.conf created"))
 		logFile.write("\n")
 		logFile.close()
+
 	def brickDirectories(self):
 		vols = self.volumesInUse
 		arbs = self.arbsInUse
@@ -1051,7 +1116,6 @@ class FortyFiveDash(App):
 						goodRange.append(num+number)
 
 		self.goodRange =  goodRange[0:bricksNeeded]
-
 
 	def toggleDebugging(self, widget):
 		global vv, vvEnabled
@@ -1356,7 +1420,6 @@ class FortyFiveDash(App):
 		logFile.write("\n")
 		logFile.close()
 
-
 	def startGluster(self, widget):
 		self.notification_message("Action","%s will be started"%choice)
 		subprocess.call(["gluster volume start %s"%choice], shell=True)
@@ -1371,7 +1434,6 @@ class FortyFiveDash(App):
 		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\t%s started"%choice))
 		logFile.write("\n")
 		logFile.close()
-
 	
 	def stopGluster(self, widget):
 		global stopIsConfirmed
@@ -1411,7 +1473,6 @@ class FortyFiveDash(App):
 			logFile.write("\n")
 			logFile.close()
 
-	
 	def deleteGluster(self, widget):
 		global choice, noVolumes
 		global deleteIsConfirmed
@@ -1557,7 +1618,6 @@ class FortyFiveDash(App):
 			tuple(entry)
 		return lines4
 
-
 	def brickStatus(self, widget, selection):
 		global badDrives
 		if self.driveList.children[selection].get_text() == "Drive Alias":
@@ -1689,6 +1749,7 @@ class FortyFiveDash(App):
 				else:
 					useful.append(tuple(splitLine))
 		return useful
+
 	def checkDrives(self):
 		global badDrives
 		badDrives = []
@@ -1810,6 +1871,7 @@ class FortyFiveDash(App):
 				self.zpoolStatusLine.append(self.zpoolWrite)
 				self.zpoolStatusLine.append(self.zpoolCksum)
 				self.zpoolStatusTable.append(self.zpoolStatusLine)
+
 
 ip = str(socket.gethostbyname(socket.gethostname()))
 
