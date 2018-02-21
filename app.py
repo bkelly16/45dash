@@ -161,6 +161,7 @@ class FortyFiveDash(App):
 			self.activeVolumeList.append(self.volumeListItem)
 		self.mainMenuVolumeContainer.append(self.activeVolumeLabel)
 		self.mainMenuVolumeContainer.append(self.activeVolumeList)
+		self.mainMenuVolumeContainer.add_class('MainMenuVolumeListDiv')
 		#--------------------------------------Overview Table-----------------------------------------------------------
 		global localhost
 		self.overviewTableContainer = gui.Widget(width='40%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
@@ -255,6 +256,7 @@ class FortyFiveDash(App):
 		self.overviewTable.append(self.numZpoolRow)
 		self.overviewTableContainer.append(self.overviewTableLabel)
 		self.overviewTableContainer.append(self.overviewTable)
+		self.overviewTableContainer.add_class("MainMenuOverviewTableDiv")
 		#--------------------------------------Settings----------------------------------------------------------
 		self.settingsContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.settingsLabel = gui.Label('General Settings', width='100%')
@@ -280,6 +282,7 @@ class FortyFiveDash(App):
 		self.settingsContainer.append(self.portEntry)		
 		self.settingsContainer.append(self.saveSettingsButton)
 		self.settingsContainer.append(self.clearTerminalButton)
+		self.settingsContainer.add_class("MainMenuSettingsDiv")
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create Configuaration----------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -674,6 +677,7 @@ class FortyFiveDash(App):
 		mainMenuContainer.append(self.mainMenuVolumeContainer)
 		mainMenuContainer.append(self.overviewTableContainer)
 		mainMenuContainer.append(self.settingsContainer)
+		mainMenuContainer.add_class('MainMenuDiv')
 		#--------------------------------------Create menu--------------------------------------------------------
 		createContainer.append(createHostsContainer)
 		hostsInputContainer = gui.Widget(width='100%', height=200, style={'display': 'block', 'overflow':'auto'})
