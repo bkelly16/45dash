@@ -7,6 +7,12 @@
     font-weight: 400;
     src: local('Roboto'), local('Roboto-Regular'), url('/res/font.woff2') format('woff2');
 }
+.MainContainer {
+    background: #fff url(http://www.45drives.com/img/45-drives-brand-gluster-header.png) 10px 10px no-repeat;
+    padding-top: 80px;
+    background-size: 780px 75px;
+}
+
 .sk-folding-cube {
   margin: 20px auto;
   width: 40px;
@@ -14,6 +20,44 @@
   position: relative;
   -webkit-transform: rotateZ(45deg);
           transform: rotateZ(45deg);
+}
+
+.MainTabBox {
+    border-top: 0px solid #ddd;
+    border-bottom: 0px;
+}
+
+.MainTabBox ul li a {
+  border-top:2px solid #000;
+  border-bottom: 0px; 
+  border-color: #be0009;
+  height:40px;
+  line-height:45px;
+  font-size:16px;
+  text-decoration: none;
+  background-color:transparent;
+  padding:3px 10px 0px 10px;
+  color:#333;
+  margin:0
+  outline: none;
+}
+
+.MainTabBox ul li a:hover {
+  border-width:5px;
+  height:37px;  
+  line-height: 39px;
+  background: #fff;
+  padding:3px 10px 0px 10px;  
+}
+
+.MainTabBox ul li a.active {
+  border-width:5px;
+  height:37px;  
+  line-height: 39px;
+  background: #fff;
+  padding:3px 10px 0px 10px;  
+  color: #000;
+  font-weight: 600;
 }
 
 .sk-folding-cube .sk-cube {
@@ -104,14 +148,14 @@ select:focus {
     border: 0px;
     outline: 0px;
     box-shadow: 0 1px 1px 0 rgba(0, 0, 0, .14);
-    border-bottom: 1px solid rgba(33, 150, 243, .26);
+    border-bottom: 1px solid transparent;
 }
 ::-moz-selection {
-    background: rgba(33, 150, 243, .26);
+    background: transparent;
     text-shadow: none
 }
 ::selection {
-    background: rgba(33, 150, 243, .26);
+    background: transparent;
     text-shadow: none
 }
 audio,
@@ -241,10 +285,10 @@ blockquote {
 blockquote:before {
     position: absolute;
     left: -.5em;
-    content: '�'
+    content: 'ï¿½'
 }
 blockquote:after {
-    content: '�';
+    content: 'ï¿½';
     margin-left: -.05em
 }
 mark {
@@ -288,14 +332,14 @@ div {
     list-style: none;
 }
 option:hover {
-    background: rgba(33, 150, 243, .26);
-    outline: 1px solid red;
+    background: rgba(48, 48, 48, .26);
+    outline: 0px solid red;
 }
 .ListItem:hover {
-    background: rgba(33, 150, 243, .26)
+    background: rgba(48, 48, 48, .26)
 }
 .ListItem[selected='True'] {
-    background: rgba(33, 150, 243, .26)
+    background: rgba(48, 48, 48, .26)
 }
 input[type='number'],
 input[type='text'],
@@ -351,6 +395,7 @@ button {
     will-change: box-shadow;
     transition: box-shadow .1s cubic-bezier(.4, 0, 1, 1), background-color .1s cubic-bezier(.4, 0, .2, 1), color .1s cubic-bezier(.4, 0, .2, 1);
     outline: none;
+    outline: 0px;
     cursor: pointer;
     text-decoration: none;
     text-align: center;
@@ -427,7 +472,7 @@ p.Title {
     font-weight: bold;
 }
 nav > ul.Menu {
-    background: rgb(33, 150, 243);
+    background: rgb(48, 48, 48);
     border: 0px;
     color: white;
 }
@@ -468,11 +513,11 @@ ul.Menu {
     border-bottom: 1px solid rgba(0, 0, 0, .26);
 }
 .Menu > .MenuItem:hover {
-    background: rgb(33, 150, 243);
+    background: rgb(48, 48, 48);
     box-shadow: 0 4px 5px 0 rgba(0, 0, 0, .14), 0 1px 10px 0 rgba(0, 0, 0, .12), 0 2px 4px -1px rgba(0, 0, 0, .2);
 }
 .MenuItem .MenuItem:hover {
-    background: rgba(33, 150, 243, .26);
+    background: transparent
 }
 .Menu::after {
     content: "";
@@ -747,9 +792,9 @@ background-color: transparent;
 }
 @-webkit-keyframes myloadinganimation {
     0%   {background-color:teal; width:250px; height:250px;}
-    25%  {background-color:cyan; width:250px; height:250px;}
-    50%  {background-color:teal; width:250px; height:250px;}
-    75%  {background-color:cyan; width:250px; height:250px;}
+    25%  {background-color:cyan; width:500px; height:500px;}
+    50%  {background-color:teal; width:750px; height:750px;}
+    75%  {background-color:cyan; width:500px; height:500px;}
     100% {background-color:teal; width:250px; height:250px;}
 
 }
@@ -757,8 +802,8 @@ background-color: transparent;
 /* Standard syntax */
 @keyframes myloadinganimation {
     0%   {background-color:teal; width:250px; height:250px;}
-    25%  {background-color:cyan; width:250px; height:250px;}
-    50%  {background-color:teal; width:250px; height:250px;}
-    75%  {background-color:cyan; width:250px; height:250px;}
+    25%  {background-color:cyan; width:500px; height:500px;}
+    50%  {background-color:teal; width:750px; height:750px;}
+    75%  {background-color:cyan; width:500px; height:500px;}
     100% {background-color:teal; width:250px; height:250px;}
 }
