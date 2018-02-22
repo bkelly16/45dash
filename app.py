@@ -300,6 +300,7 @@ class FortyFiveDash(App):
 		createHostsContainer.append(self.hostsLabel)
 		createHostsContainer.append(self.hostsInputLabel)
 		createHostsContainer.append(self.hostsInputDropDown)
+		createHostsContainer.add_class('CreateVolumeHostsDiv')
 
 		#--------------------------------------Gluster details----------------------------------------------------
 		self.glusterDetailsContainer = gui.Widget(width='30%', height=600,  style={'margin':'0px auto','padding':'5px','float':'left','display':'block','overflow':'auto'})
@@ -354,6 +355,7 @@ class FortyFiveDash(App):
 		self.glusterDetailsContainer.append(self.resetButton)
 		self.glusterDetailsContainer.append(self.debuggingButton)
 		self.glusterDetailsContainer.append(self.createButton)
+		self.glusterDetailsContainer.add_class('CreateVolumeGlusterDetailsDiv')
 		#--------------------------------------Sharing protocols--------------------------------------------------
 		self.sharingContainer = gui.Widget(width='30%', height=600, style={'margin':'0px auto','padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.GaneshaiHostContainer = gui.Widget(width='100%')
@@ -380,6 +382,7 @@ class FortyFiveDash(App):
 		self.sharingContainer.append(self.numGaneshaIPDropDown)
 		self.sharingContainer.append(self.GaneshaiHostContainer)
 		self.sharingContainer.append(self.enableGaneshaButton)
+		self.sharingContainer.add_class('CreateVolumeSharingProtocolsDiv')
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create - Zpool ----------------------------------------------------
 		#_________________________________________________________________________________________________________
@@ -417,6 +420,7 @@ class FortyFiveDash(App):
 		self.zpoolDetailsContainer.append(self.zpoolAshiftLabel)
 		self.zpoolDetailsContainer.append(self.zpoolAshiftInput)
 		self.zpoolDetailsContainer.append(self.zpoolCreateButton)
+		self.zpoolDetailsContainer.add_class('CreateZpoolDetailsDiv')
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Monitor - Volume Configuation--------------------------------------
 		#_________________________________________________________________________________________________________
@@ -730,10 +734,6 @@ class FortyFiveDash(App):
 	def retrieveVolumes(self):
 		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
 		glusters = s.read().splitlines()
-		logFile = open("/opt/45dash/etc/45Dash.log", "a")
-		logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M"  + "\tRetrieved Volumes"))
-		logFile.write("\n")
-		logFile.close()
 		return glusters
 
 	def updateVolumeLists(self):
