@@ -259,6 +259,7 @@ class FortyFiveDash(App):
 		self.overviewTableContainer.add_class("MainMenuOverviewTableDiv")
 		#--------------------------------------Settings----------------------------------------------------------
 		self.settingsContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.settingsButtonsContainer = gui.Widget(width='100%')
 		self.settingsLabel = gui.Label('General Settings', width='100%')
 		self.usernameLabel = gui.Label('Username:', width='70%', height=30, style={'float':'left'})
 		self.usernameEntry = gui.TextInput(width='30%', height=30, style={'float':'right'})
@@ -279,10 +280,12 @@ class FortyFiveDash(App):
 		self.settingsContainer.append(self.passwordLabel)
 		self.settingsContainer.append(self.passwordEntry)
 		self.settingsContainer.append(self.portLabel)
-		self.settingsContainer.append(self.portEntry)		
-		self.settingsContainer.append(self.saveSettingsButton)
-		self.settingsContainer.append(self.clearTerminalButton)
+		self.settingsContainer.append(self.portEntry)
+		self.settingsButtonsContainer.append(self.saveSettingsButton)
+		self.settingsButtonsContainer.append(self.clearTerminalButton)
+		self.settingsContainer.append(self.settingsButtonsContainer)
 		self.settingsContainer.add_class("MainMenuSettingsDiv")
+		self.settingsButtonsContainer.add_class("MainMenuSettingsButtonsDiv")
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Create Configuaration----------------------------------------------
 		#_________________________________________________________________________________________________________
