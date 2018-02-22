@@ -263,29 +263,48 @@ class FortyFiveDash(App):
 		#--------------------------------------Settings----------------------------------------------------------
 		self.settingsContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.settingsButtonsContainer = gui.Widget(width='100%')
-		self.settingsLabel = gui.Label('General Settings', width='100%')
-		self.usernameLabel = gui.Label('Username:', width='70%', height=30, style={'float':'left'})
-		self.usernameEntry = gui.TextInput(width='30%', height=30, style={'float':'right'})
-		self.usernameEntry.set_text(username)
-		self.passwordLabel = gui.Label('Password:', width='70%', height=30, style={'float':'left'})
-		self.passwordEntry = gui.TextInput(width='30%', height=30, style={'float':'right'})
-		self.passwordEntry.set_text(password)
-		self.portLabel = gui.Label('Port ID:', width='70%', height=30, style={'float':'left'})
-		self.portEntry = gui.TextInput(width='30%', height=30, style={'float':'right'})
-		self.portEntry.set_text(port)
+
+		self.settingsTable = gui.Table()
+		self.usernameRow = gui.TableRow()
+		self.usernameLabel = gui.TableItem('Username:')
+		self.usernameEntry = gui.TableEditableItem(username)
+		self.usernameLabel.add_class('MainMenuSettingsLabelColumn')
+		self.usernameEntry.add_class('MainMenuSettingsEntryColumn')
+		self.usernameRow.append(self.usernameLabel)
+		self.usernameRow.append(self.usernameEntry)
+		self.settingsTable.append(self.usernameRow)
+		self.passwordBlocked = ''
+		for char in password:
+			self.passwordBlocked += '*'
+		self.passwordRow = gui.TableRow()
+		self.passwordLabel = gui.TableItem('Password:')
+		self.passwordEntry = gui.TableEditableItem(self.passwordBlocked)
+		self.passwordLabel.add_class('MainMenuSettingsLabelColumn')
+		self.passwordEntry.add_class('MainMenuSettingsEntryColumn')
+		self.passwordRow.append(self.passwordLabel)
+		self.passwordRow.append(self.passwordEntry)
+		self.settingsTable.append(self.passwordRow)
+		self.portRow = gui.TableRow()
+		self.portLabel = gui.TableItem('Port:')
+		self.portEntry = gui.TableEditableItem(port)
+		self.portLabel.add_class('MainMenuSettingsLabelColumn')
+		self.portEntry.add_class('MainMenuSettingsEntryColumn')
+		self.portRow.append(self.portLabel)
+		self.portRow.append(self.portEntry)
+		self.settingsTable.append(self.portRow)
 		self.saveSettingsButton = gui.Button('Save Changes (Restart UI to apply changes)', width='100%', height=30)
 		self.saveSettingsButton.set_on_click_listener(self.changeSettings)
 		self.clearTerminalButton = gui.Button('Clear Terminal', width='100%', height=30)
 		self.clearTerminalButton.set_on_click_listener(lambda x: subprocess.call(['clear'], shell=True))
-		self.settingsContainer.append(self.settingsLabel)
-		self.settingsContainer.append(self.usernameLabel)
-		self.settingsContainer.append(self.usernameEntry)
-		self.settingsContainer.append(self.passwordLabel)
-		self.settingsContainer.append(self.passwordEntry)
-		self.settingsContainer.append(self.portLabel)
-		self.settingsContainer.append(self.portEntry)
+		self.restartButton = gui.Button('Restart UI', width='100%', height=30)
+		self.restartButton.set_on_click_listener(self.restart)
+		self.shutdownUIButton = gui.Button('Shutdown UI', width='100%', height=30)
+		self.shutdownUIButton.set_on_click_listener(self.shutdown)
+		self.settingsContainer.append(self.settingsTable)
 		self.settingsButtonsContainer.append(self.saveSettingsButton)
 		self.settingsButtonsContainer.append(self.clearTerminalButton)
+		self.settingsButtonsContainer.append(self.restartButton)
+		self.settingsButtonsContainer.append(self.shutdownUIButton)
 		self.settingsContainer.append(self.settingsButtonsContainer)
 		self.settingsContainer.add_class("MainMenuSettingsDiv")
 		self.settingsButtonsContainer.add_class("MainMenuSettingsButtonsDiv")
@@ -432,6 +451,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Volume List-------------------------------------------------------
 		self.monitorVolumeContainer = gui.Widget(width='10%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorVolumeContainer.add_class('MonitorVolumesListDiv')
 		self.volumeLabel = gui.Label('Active Volumes', width='100%', height=30)
 		self.volumeList = gui.ListView(width='100%', style={'float':'left'})
 		for volume in self.active_Volume_List:
@@ -455,6 +475,7 @@ class FortyFiveDash(App):
 		self.monitorVolumeContainer.append(self.deleteButton)
 		#--------------------------------------Volume info Table---------------------------------------------------
 		self.monitorInfoContainer = gui.Widget(width='49%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorInfoContainer.add_class('MonitorVolumesInfoDiv')
 		self.infoLabel = gui.Label('Volume Info', width='100%', height=30)
 		self.infoTable = gui.Table(width='100%',style={'text-align':'left'})
 		if noVolumes == True:
@@ -476,6 +497,7 @@ class FortyFiveDash(App):
 		self.monitorInfoContainer.append(self.infoTable)
 		#--------------------------------------Volume Status Table-----------------------------------------------
 		self.monitorStatusContainer = gui.Widget(width='37%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorStatusContainer.add_class('MonitorVolumesStatusDiv')
 		self.statusLabel = gui.Label('Volume Status',width="100%", height=30)
 		self.statusTable = gui.Table(width='100%')
 		self.statusTableTitle = gui.TableRow()
@@ -522,6 +544,7 @@ class FortyFiveDash(App):
 		#_________________________________________________________________________________________________________
 		#--------------------------------------Drive Info --------------------------------------------------------
 		self.drivesVolumeListContainer = gui.Widget(width='20%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.drivesVolumeListContainer.add_class('MonitorDrivesVolumeListDiv')
 		self.drivesVolumeListLabel = gui.Label('Active Volumes', height=30, width='100%')
 		self.drivesVolumeList = gui.ListView()
 		for volume in self.retrieveVolumes():
@@ -536,6 +559,7 @@ class FortyFiveDash(App):
 		self.drivesVolumeList.set_on_selection_listener(self.driveVolumeListSelected)
 		#-------------------------------------------------------------------------------------
 		self.monitorDrivesListContainer=gui.Widget(width='15%', height=450, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesListContainer.add_class('MonitorDrivesDriveListDiv')
 		self.driveLabel = gui.Label('Drive Status', width='100%', height=20)
 		self.driveList = gui.ListView()
 		drive_List = self.driveMapTable()
@@ -567,6 +591,7 @@ class FortyFiveDash(App):
 		self.monitorDrivesListContainer.append(self.driveList)
 		#--------------------------------------Drive info---------------------------------------------------------
 		self.monitorDrivesInfoContainer=gui.Widget(width='34%',height=450, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesInfoContainer.add_class('MonitorDrivesStorageDiv')
 		self.detailLabel = gui.Label('Brick Storage', width='100%', height=20)
 		self.detailTable = gui.Table(width='100%', style={'text-align':'left'})
 		self.detailTable.append_from_list(self.detailText())
@@ -574,6 +599,7 @@ class FortyFiveDash(App):
 		self.monitorDrivesInfoContainer.append(self.detailTable)
 		#--------------------------------------Drive Text Box-----------------------------------------------------
 		self.monitorDrivesTextBoxContainer = gui.Widget(width='26%', height=450, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesTextBoxContainer.add_class('MonitorDrivesInfoDiv')
 		self.driveInfoTextLabel = gui.Label('Drive Info', height=30, width='100%')
 		self.driveInfoTable = gui.Table(width='100%', style={'text-align':'left'})
 		self.driveInfoDefault = gui.TableRow()
@@ -584,6 +610,7 @@ class FortyFiveDash(App):
 		self.monitorDrivesTextBoxContainer.append(self.driveInfoTable)
 		#--------------------------------------Drive health box---------------------------------------------------
 		self.monitorDrivesHealthContainer = gui.Widget(width='75%', height = 236 ,style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorDrivesHealthContainer.add_class('MonitorDrivesHealthDiv')
 		self.healthListLabel = gui.Label('Drive Health',width='100%', height=30)
 		self.healthTable = gui.Table(width='100%',style={'text-align':'left'})
 		healthStats = self.getDriveHealth()
@@ -602,6 +629,7 @@ class FortyFiveDash(App):
 		#--------------------------------------Monitor ZPool------------------------------------------------------
 		#_________________________________________________________________________________________________________
 		self.monitorZpoolZpoolContainer = gui.Widget(width='35%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorZpoolZpoolContainer.add_class('MonitorZpoolListDiv')
 		self.monitorZpoolLabel = gui.Label('Active Zpools (Select name of zpool to view)', width='100%', height=30)
 		self.monitorZpoolTable = gui.Table(width='100%')
 		if noZpools == True:
@@ -631,6 +659,7 @@ class FortyFiveDash(App):
 		self.monitorZpoolZpoolContainer.append(self.deleteZpoolButton)
 		#--------------------------------------Zpool status-------------------------------------------------------
 		self.monitorZpoolStatusContainer = gui.Widget(width='45%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
+		self.monitorZpoolStatusContainer.add_class('MonitorZpoolStatusDiv')
 		self.zpoolStatusLabel = gui.Label('Zpool Status', width='100%', height=30)
 		self.zpoolStatusTable = gui.Table(width='100%')
 		if noZpools == True:
@@ -737,6 +766,18 @@ class FortyFiveDash(App):
 
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Functions-----------------------------------------------------
+	def restart(self, widget):
+		#s = subprocess.Popen(["ps -ef| grep 'python /opt/45dash/app.py' | grep -v auto | grep -v 'grep' "], shell=True, stdout=subprocess.PIPE).stdout]
+		#Calls ps -ef to pull only the app.py line, while excluding the auto color, and the current command
+		line = s.read().splitlines()
+		words = line[0].split() #Splits the process line into a list, where each entry is a single number or word
+		processCode = words[1] #From the list above, takes the second entry, which is the process code
+		#subprocess.call(["python /opt/45dash/app.py | kill -9 %s"%processCode], shell=True) #Not sure which one of these commands should be called
+		#subprocess.call(["kill -9 %s | python /opt/45dash/app.py"%processCode], shell=True) #Not sure which one of these commands should be called
+	
+	def shutdown(self, _):
+		self.close()
+
 	def retrieveVolumes(self):
 		s=subprocess.Popen(["gluster volume list"], shell=True, stdout=subprocess.PIPE).stdout
 		glusters = s.read().splitlines()
@@ -987,10 +1028,7 @@ class FortyFiveDash(App):
 		hostsInputContainer.empty()
 		numHosts = int(selection)
 		for num in range(1,numHosts+1):
-			if num % 2 == 1:
-				self.hostInput = gui.TextInput(width='50%', key=num, height=30, style={'float':'left'})
-			if num % 2 == 0:
-				self.hostInput = gui.TextInput(width='50%', height=30, style={'float':'right'})
+			self.hostInput = gui.TextInput(width='50%', height=30)
 			if num == 1:
 				self.hostInput.set_text(localHost)
 			else:
