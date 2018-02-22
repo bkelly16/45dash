@@ -32,9 +32,13 @@ if isReceivingEmails:
 rConf.close()
 bConf = open('/opt/45dash/etc/bricks.conf','r')
 content2 = bConf.readlines()
-hostsBrickDict = (content2[0]).replace("hostsBrickDict=",'').strip("\n")
-bConf.close()
-eval(hostsBrickDict)
+try:
+	hostsBrickDict = (content2[0]).replace("hostsBrickDict=",'').strip("\n")
+	bConf.close()
+	eval(hostsBrickDict)
+except IndexError:
+	hostsBrickDict = {}
+	bConf.close()
 
 global numConnectedHosts
 global connectedHosts
@@ -97,8 +101,6 @@ class FortyFiveDash(App):
 	#--------------------------------------------Create Functions---------------------------------------------------
 	
 	def main(self):
-		if isReceivingEmails:
-			self.hourlyUpdate()
 
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
@@ -111,17 +113,18 @@ class FortyFiveDash(App):
 		logFile.write("\n")
 		logFile.close()
 		#---------------------------------------Brick Dirs--------------------------------------------------------
-		self.hostsBrickDict = ast.literal_eval(hostsBrickDict)
-		self.volumesInUse = []
-		self.arbsInUse = []
-		for entry in self.hostsBrickDict:
-			for vol  in self.hostsBrickDict[entry]:
-				if 'vol' in vol:
-					self.volumesInUse.append(int(vol.strip('vol')))
-				if 'arb' in vol:
-					self.arbsInUse.append(int(vol.strip('arb')))
-		self.volumesInUse.sort()
-		self.arbsInUse.sort()
+		if hostsBrickDict != {}:
+			self.hostsBrickDict = ast.literal_eval(hostsBrickDict)
+			self.volumesInUse = []
+			self.arbsInUse = []
+			for entry in self.hostsBrickDict:
+				for vol  in self.hostsBrickDict[entry]:
+					if 'vol' in vol:
+						self.volumesInUse.append(int(vol.strip('vol')))
+					if 'arb' in vol:
+						self.arbsInUse.append(int(vol.strip('arb')))
+			self.volumesInUse.sort()
+			self.arbsInUse.sort()
 		#------------------------------------------Loading Screen--------------------------------------------------
 		self.loading_animation_widget = LoadingAnimation(width=100, height=100, margin='50px auto')
 		#--------------Check if zpools and volumes are present and set defaults if they are not----------------------
@@ -887,7 +890,7 @@ class FortyFiveDash(App):
 			server.ehlo()
 			server.starttls()
 			server.ehlo()
-			server.login('rkk1919@gmail.com', 'RohitK19')	
+			server.login(' ', '')	
 			text = msg.as_string()
 			problems = server.sendmail('rkk@gmail.com', 'rkochhar@protocase.com', text)
 			server.quit()
@@ -1244,13 +1247,12 @@ class FortyFiveDash(App):
 				self.startButton.set_text('Start %s'%choice)
 				self.stopButton.set_text('Stop %s'%choice)
 				self.deleteButton.set_text('Delete %s'%choice)
+			self.goodRange2 = []
 			for entry in self.goodRange:
-				print entry
 				entry2 = 'vol%d'%entry
 				self.goodRange2.append(entry2)
-			self.googRange = self.goodRange2
+			self.goodRange = self.goodRange2
 			self.hostsBrickDict[self.nameInput.get_text()] = self.goodRange
-			print self.hostsBrickDict
 			self.goodRange = []
 			self.updateVolumeLists()
 			self.updateMonitorTables()
@@ -1469,7 +1471,7 @@ class FortyFiveDash(App):
 			return 0
 
 		elif stopIsConfirmed == False:
-			self.notification_message("Warning!","Deleting a gluster will make its data inaccesible, press again to confirm")
+			self.notification_message("Warning!","Stopping a gluster will make its data inaccesible, press again to confirm")
 			stopIsConfirmed = True
 			logFile = open("/opt/45dash/etc/45Dash.log", "a")
 			logFile.write(datetime.datetime.now().strftime("%m/%d/%y %H:%M" + "\tAttempting to stop %s"%choice))
@@ -1485,6 +1487,11 @@ class FortyFiveDash(App):
 			subprocess.call(["echo 'y' | gluster volume delete %s"%(choice)], shell=True)
 			stopIsConfirmed = False
 			deleteIsConfirmed = False
+			del self.hostsBrickDict[choice]
+			print self.hostsBrickDict
+			bConf = open('/opt/45dash/etc/bricks.conf', "w")
+			bConf.write(str(self.hostsBrickDict))
+			bConf.close()
 			numVol2 = len(self.retrieveVolumes())
 			if numVol2 == numVol:
 				self.notification_message("Error!","Gluster Volume %s wasn't deleted"%choice )
