@@ -13,6 +13,11 @@
     background-size: 780px 75px;
 }
 
+a {
+    outline:none;
+}
+
+
 .sk-folding-cube {
   margin: 20px auto;
   width: 40px;
@@ -85,7 +90,7 @@
 .MainMenuVolumeListDiv ul li.ListItem {
     text-indent: 10px;
      line-height: 20px;   
-    color: #be0009 !important;
+  
     cursor: pointer;
     padding: 5px 0px 5px 0px;
 }
@@ -130,6 +135,14 @@
     min-height: 25px;
 }
 
+.MainMenuSettingsButtonsDiv {
+    outline: 1px solid #cccccc;
+    margin-top: 8px !important;
+    overflow: none;
+    min-height: 300px;
+}
+
+
 .Button {
     width: auto !important;
     min-width: 320px !important;
@@ -141,6 +154,84 @@
 .Button:hover {
     background: #303030 !important;
  
+}
+
+
+.MainMenuSettingsButtonsDiv .Button {display: block; margin-top: 20px !important;}
+
+.CreateTabBox { padding-top: 0px;}
+
+.CreateTabBox ul {border-bottom: 1px solid #bebebe; }
+
+.CreateTabBox ul li {
+    max-width: 320px;
+    border-top: 1px solid #bebebe;
+    border-left: 1px solid #bebebe;
+    border-right: 1px solid #bebebe;   
+    border-bottom: 1px solif #fff;     
+     border-radius: 5px 5px 0px 0px; 
+    -khtml-border-radius:  5px 5px 0px 0px;
+    -webkit-border-radius:  5px 5px 0px 0px;
+    -moz-border-radius:   5px 5px 0px 0px;    
+    margin-right: 10px;
+    margin-left: 10px;
+      margin-bottom: -1px !important;
+}
+
+.CreateTabBox ul li {margin-top: -5px !important;  }
+
+.CreateTabBox ul li a,.CreateTabBox ul li a:hover, .CreateTabBox ul li a.active {
+    border-top: 0px solid transparent;
+    height:40px;
+    line-height:45px;
+     border-radius: 5px 5px 0px 0px; 
+    -khtml-border-radius:  5px 5px 0px 0px;
+    -webkit-border-radius:  5px 5px 0px 0px;
+    -moz-border-radius:   5px 5px 0px 0px;  
+}
+
+.CreateTabBox ul li a {background: #cdcdcd;}
+
+.CreateTabBox ul li a:hover {background: #fff;}
+
+.CreateTabBox ul li a.active {background: #fff !important; border-bottom: 1px solid #fff;}
+
+.CreateVolumeHostsDiv
+
+.CreateVolumeHostsDiv, .CreateVolumeGlusterDetailsDiv, .CreateVolumeSharingProtocolsDiv {
+    border: 1px solid #cccccc;
+    border-radius: 3px; 
+    -khtml-border-radius:  3px;
+    -webkit-border-radius:  3px;
+    -moz-border-radius:  3px;       
+    background: #eeeeee !important;
+    margin-right: 10px !important;
+
+}
+
+.CreateVolumeHostsDiv .Widget, .CreateVolumeGlusterDetailsDiv .Widget {
+    background: #fff !important; outline: 1px solid #cccccc !important; padding: 10px; width: 90% !important; height: auto !important;
+    margin-top: 20px !important; top: 20px !important; 
+}
+
+.CreateVolumeHostsDiv, .CreateZpoolDetailsDiv {
+    border: 1px solid #cccccc;
+    border-radius: 3px; 
+    -khtml-border-radius:  3px;
+    -webkit-border-radius:  3px;
+    -moz-border-radius:  3px;       
+    background: #eeeeee !important;
+    margin-right: 10px !important;
+}
+
+.CreateZpoolDetailsDiv {float: left;}
+
+.CreateVolumeHostsDiv select {margin-bottom: 20px !important;}
+
+.CreateVolumeHostsDiv p, .CreateVolumeGlusterDetailsDiv p, .CreateVolumeSharingProtocolsDiv p {
+    font-size: 16px;
+    line-height: 22px;
+
 }
 
 .sk-folding-cube .sk-cube {
@@ -875,9 +966,9 @@ background-color: transparent;
 }
 @-webkit-keyframes myloadinganimation {
     0%   {background-color:teal; width:250px; height:250px;}
-    25%  {background-color:cyan; width:500px; height:500px;}
-    50%  {background-color:teal; width:750px; height:750px;}
-    75%  {background-color:cyan; width:500px; height:500px;}
+    25%  {background-color:cyan; width:250px; height:250px;}
+    50%  {background-color:teal; width:250px; height:250px;}
+    75%  {background-color:cyan; width:250px; height:250px;}
     100% {background-color:teal; width:250px; height:250px;}
 
 }
@@ -885,8 +976,8 @@ background-color: transparent;
 /* Standard syntax */
 @keyframes myloadinganimation {
     0%   {background-color:teal; width:250px; height:250px;}
-    25%  {background-color:cyan; width:500px; height:500px;}
-    50%  {background-color:teal; width:750px; height:750px;}
-    75%  {background-color:cyan; width:500px; height:500px;}
+    25%  {background-color:cyan; width:250px; height:250px;}
+    50%  {background-color:teal; width:250px; height:250px;}
+    75%  {background-color:cyan; width:250px; height:250px;}
     100% {background-color:teal; width:250px; height:250px;}
 }
