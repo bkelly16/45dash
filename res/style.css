@@ -60,6 +60,89 @@
   font-weight: 600;
 }
 
+.MainMenuVolumeListDiv, .MainMenuOverviewTableDiv {
+    border: 1px solid #cccccc;
+    border-radius: 3px; 
+    -khtml-border-radius:  3px;
+    -webkit-border-radius:  3px;
+    -moz-border-radius:  3px;       
+    background: #eeeeee;
+    margin-right: 10px !important;
+
+}
+
+.MainMenuVolumeListDiv .Label, .MainMenuOverviewTableDiv .Label{
+    font-size: 24px;
+    color: #303030;
+
+}
+
+.MainMenuVolumeListDiv ul {
+    font-size: 16px;
+    outline: 1px solid #cccccc;
+}    
+
+.MainMenuVolumeListDiv ul li.ListItem {
+    text-indent: 10px;
+     line-height: 20px;   
+    color: #be0009 !important;
+    cursor: pointer;
+    padding: 5px 0px 5px 0px;
+}
+
+.MainMenuVolumeListDiv ul li.ListItem:hover {background: #f5f5f5;} 
+
+
+.MainMenuOverviewTableDiv table {
+    margin-top: 8px !important;
+    background: #fff;
+    font-size: 16px;
+    outline: 1px solid #cccccc;
+}
+
+.MainMenuOverviewTableDiv table .TableRow {
+    text-indent: 10px;
+     line-height: 20px;   
+    color: #303030 !important;
+    height: 25px;
+    padding: 5px 0px 5px 0px;
+
+}
+
+.MainMenuSettingsDiv {
+
+    border: 1px solid #cccccc;
+    border-radius: 3px; 
+    -khtml-border-radius:  3px;
+    -webkit-border-radius:  3px;
+    -moz-border-radius:  3px;       
+    background: #eeeeee;
+ 
+}
+.MainMenuSettingsDiv .Label {
+    font-size: 18px;
+    line-height: 24px;
+    color: #303030;
+}    
+
+.MainMenuSettingsDiv p {
+    text-indent: 10px;
+    min-height: 25px;
+}
+
+.Button {
+    width: auto !important;
+    min-width: 320px !important;
+    display: block;
+    background: #be0009 !important;
+    margin: 20px 0px 10px 20px !important;
+}
+
+.Button:hover {
+    background: #303030 !important;
+ 
+}
+
 .sk-folding-cube .sk-cube {
   float: left;
   width: 50%;
