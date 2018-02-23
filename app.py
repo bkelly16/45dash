@@ -104,6 +104,7 @@ class FortyFiveDash(App):
 
 		#---------------------------------------Preconfig---------------------------------------------------------
 		subprocess.call(["chmod +x /opt/45dash/lsdevpy"], shell=True)
+		subprocess.call(["chmod +x /opt/45dash/res/stop.sh"], shell=True)
 		subprocess.call(["sed -i -e 's/\r$//' /opt/45dash/lsdevpy"], shell=True)
 		subprocess.call(["dmap -qs 60"], shell=True)
 		subprocess.call(["systemctl start glusterd"], shell=True)
@@ -452,6 +453,8 @@ class FortyFiveDash(App):
 		#--------------------------------------Volume List-------------------------------------------------------
 		self.monitorVolumeContainer = gui.Widget(width='10%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.monitorVolumeContainer.add_class('MonitorVolumesListDiv')
+		self.monitorVolumeButtonsContainer = gui.Widget()
+		self.monitorVolumeButtonsContainer.add_class('MonitorVolumeButtonsContainer')
 		self.volumeLabel = gui.Label('Active Volumes', width='100%', height=30)
 		self.volumeList = gui.ListView(width='100%', style={'float':'left'})
 		for volume in self.active_Volume_List:
@@ -470,9 +473,10 @@ class FortyFiveDash(App):
 		self.deleteButton.set_on_click_listener(self.deleteGluster)
 		self.monitorVolumeContainer.append(self.volumeLabel)
 		self.monitorVolumeContainer.append(self.volumeList)
-		self.monitorVolumeContainer.append(self.startButton)
-		self.monitorVolumeContainer.append(self.stopButton)
-		self.monitorVolumeContainer.append(self.deleteButton)
+		self.monitorVolumeButtonsContainer.append(self.startButton)
+		self.monitorVolumeButtonsContainer.append(self.stopButton)
+		self.monitorVolumeButtonsContainer.append(self.deleteButton)
+		self.monitorVolumeContainer.append(self.monitorVolumeButtonsContainer)
 		#--------------------------------------Volume info Table---------------------------------------------------
 		self.monitorInfoContainer = gui.Widget(width='49%', height=700, style={'padding':'5px','float':'left','display':'block','overflow':'auto'})
 		self.monitorInfoContainer.add_class('MonitorVolumesInfoDiv')
@@ -767,14 +771,7 @@ class FortyFiveDash(App):
 	#_____________________________________________________________________________________________________________
 	#-----------------------------------------------Functions-----------------------------------------------------
 	def restart(self, widget):
-		#s = subprocess.Popen(["ps -ef| grep 'python /opt/45dash/app.py' | grep -v auto | grep -v 'grep' "], shell=True, stdout=subprocess.PIPE).stdout]
-		#Calls ps -ef to pull only the app.py line, while excluding the auto color, and the current command
-		line = s.read().splitlines()
-		words = line[0].split() #Splits the process line into a list, where each entry is a single number or word
-		processCode = words[1] #From the list above, takes the second entry, which is the process code
-		#subprocess.call(["python /opt/45dash/app.py | kill -9 %s"%processCode], shell=True) #Not sure which one of these commands should be called
-		#subprocess.call(["kill -9 %s | python /opt/45dash/app.py"%processCode], shell=True) #Not sure which one of these commands should be called
-	
+		subprocess.call('/opt/45dash/res/stop.sh', shell=True)
 	def shutdown(self, _):
 		self.close()
 
@@ -1923,4 +1920,8 @@ class FortyFiveDash(App):
 
 ip = str(socket.gethostbyname(socket.gethostname()))
 
-start(FortyFiveDash, address=ip, port=int(port), multiple_instance=False, start_browser=False, username=username, password=password)
+try:
+	start(FortyFiveDash, address=ip, port=int(port), multiple_instance=False, start_browser=False, username=username, password=password)
+except socket.error:
+	port += 1
+	start(FortyFiveDash, address=ip, port=int(port), multiple_instance=False, start_browser=False, username=username, password=password)
