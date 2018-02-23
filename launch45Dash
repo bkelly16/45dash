@@ -1,0 +1,6 @@
+#!/bin/bash
+
+while :
+	do
+		python /opt/45dash/app.py
+done
