@@ -32,6 +32,8 @@ a {
     border-bottom: 0px;
 }
 
+.MainTabBox ul {background: #e8e8e8;}
+
 .MainTabBox ul li a {
   border-top:2px solid #000;
   border-bottom: 0px; 
@@ -51,7 +53,7 @@ a {
   border-width:5px;
   height:37px;  
   line-height: 39px;
-  background: #fff;
+  background: #e8e8e8;
   padding:3px 10px 0px 10px;  
 }
 
@@ -90,8 +92,6 @@ a {
 .MainMenuVolumeListDiv ul li.ListItem {
     text-indent: 10px;
      line-height: 20px;   
-  
-    cursor: pointer;
     padding: 5px 0px 5px 0px;
 }
 
@@ -122,24 +122,40 @@ a {
     -webkit-border-radius:  3px;
     -moz-border-radius:  3px;       
     background: #eeeeee;
+    max-width: 320px;
  
 }
+
+.MainMenuSettingsDiv table.Table {
+    outline: 1px solid #cccccc;
+    background: #fff;
+    margin-top: 8px !important;    
+    width: 100%;
+    padding: 5px;
+    font-size: 16px;
+    line-height:20px;
+    text-align: left;
+}
+
+.MainMenuSettingsDiv table.Table .TableItem , .MainMenuSettingsDiv table.Table .TableEditableItem .TextInput {text-indent: 10px; height: 30px;}
+.MainMenuSettingsDiv table.Table .TableEditableItem .TextInput {margin-top: 2px;}
+.MainMenuSettingsDiv table.Table tr td {}
+
 .MainMenuSettingsDiv .Label {
-    font-size: 18px;
+    font-size: 24px;
     line-height: 24px;
     color: #303030;
 }    
 
 .MainMenuSettingsDiv p {
     text-indent: 10px;
-    min-height: 25px;
+ 
 }
 
 .MainMenuSettingsButtonsDiv {
-    outline: 1px solid #cccccc;
-    margin-top: 8px !important;
     overflow: none;
-    min-height: 300px;
+    padding-top: 10px;
+    background: transparent;
 }
 
 
@@ -157,13 +173,13 @@ a {
 }
 
 
-.MainMenuSettingsButtonsDiv .Button {display: block; margin-top: 20px !important;}
+.MainMenuSettingsButtonsDiv .Button {display: block; max-width: 250px !important; margin-top: 20px !important;}
 
-.CreateTabBox { padding-top: 0px;}
+.CreateTabBox, .MonitorTabBox { padding-top: 0px;}
 
-.CreateTabBox ul {border-bottom: 1px solid #bebebe; }
+.CreateTabBox ul, .MonitorTabBox ul {border-bottom: 1px solid #bebebe; background: #fff;}
 
-.CreateTabBox ul li {
+.CreateTabBox ul li, .MonitorTabBox ul li {
     max-width: 320px;
     border-top: 1px solid #bebebe;
     border-left: 1px solid #bebebe;
@@ -178,9 +194,9 @@ a {
       margin-bottom: -1px !important;
 }
 
-.CreateTabBox ul li {margin-top: -5px !important;  }
+.CreateTabBox ul li, .MonitorTabBox ul li {margin-top: -5px !important;}
 
-.CreateTabBox ul li a,.CreateTabBox ul li a:hover, .CreateTabBox ul li a.active {
+.CreateTabBox ul li a,.CreateTabBox ul li a:hover, .CreateTabBox ul li a.active, .MonitorTabBox ul li a, .MonitorTabBox ul li a:hover .MonitorTabBox ul li a.active  {
     border-top: 0px solid transparent;
     height:40px;
     line-height:45px;
@@ -190,11 +206,11 @@ a {
     -moz-border-radius:   5px 5px 0px 0px;  
 }
 
-.CreateTabBox ul li a {background: #cdcdcd;}
+.CreateTabBox ul li a, .MonitorTabBox ul li a {background: #e8e8e8;}
 
-.CreateTabBox ul li a:hover {background: #fff;}
+.CreateTabBox ul li a:hover, .MonitorTabBox ul li a:hover {background: #fff;}
 
-.CreateTabBox ul li a.active {background: #fff !important; border-bottom: 1px solid #fff;}
+.CreateTabBox ul li a.active, .MonitorTabBox ul li a.active {background: #fff !important; border-bottom: 1px solid #fff;}
 
 .CreateVolumeHostsDiv
 
@@ -233,6 +249,30 @@ a {
     line-height: 22px;
 
 }
+
+.MonitorVolumesListDiv, .MonitorVolumesInfoDiv, .MonitorVolumesStatusDiv {
+    border: 1px solid #cccccc;
+    border-radius: 3px; 
+    -khtml-border-radius:  3px;
+    -webkit-border-radius:  3px;
+    -moz-border-radius:  3px;       
+    background: #eeeeee !important;
+    margin-right: 10px !important;    
+}
+
+.MonitorVolumesListDiv .Label, .MonitorVolumesInfoDiv .Label, .MonitorVolumesStatusDiv .Label {font-size: 24px;}
+
+.MonitorVolumesListDiv ul.ListView, .MonitorVolumesInfoDiv table, .MonitorVolumesStatusDiv table {
+    font-size: 16px !important; 
+    line-height: 20px !important;
+    max-width: 100%;
+    overflow-x: hidden;
+    background: #fff;
+    outline: 1px solid #ccc;
+}
+.MonitorVolumesListDiv ul.ListView li.ListItem {min-height: 20px !important;}
+.MonitorVolumesInfoDiv table tr td, .MonitorVolumesStatusDiv table tr td {padding: 3px;}
+
 
 .sk-folding-cube .sk-cube {
   float: left;
@@ -459,10 +499,10 @@ blockquote {
 blockquote:before {
     position: absolute;
     left: -.5em;
-    content: 'ï¿½'
+    content: '�'
 }
 blockquote:after {
-    content: 'ï¿½';
+    content: '�';
     margin-left: -.05em
 }
 mark {
