@@ -46,12 +46,12 @@ etcHosts = open('/etc/hosts')
 numConnectedHosts = -2
 connectedHosts = []
 for line in etcHosts:
-	print line
 	numConnectedHosts = numConnectedHosts + 1
 	connectedHosts.append(line)
 del connectedHosts[0]
 del connectedHosts[0]
 connectedHostNames = []
+print connectedHosts
 for entry in connectedHosts:
 	print entry
 	host = re.split("\t", entry)
