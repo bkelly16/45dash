@@ -1793,7 +1793,11 @@ class FortyFiveDash(App):
 					inte = 2
 				else:
 					useful.append(tuple(splitLine))
-		return useful
+		useful2 = []
+		for line in useful:
+			if len(line) == 9:
+				useful2.append(line)
+		return useful2
 
 	def checkDrives(self):
 		global badDrives
