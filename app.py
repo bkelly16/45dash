@@ -51,9 +51,8 @@ for line in etcHosts:
 del connectedHosts[0]
 del connectedHosts[0]
 connectedHostNames = []
-print connectedHosts
 for entry in connectedHosts:
-	print entry
+	entry = entry.strip('\n')
 	host = re.split("\t", entry)
 	connectedHostNames.append(host[1].strip('\n'))
 
