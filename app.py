@@ -52,6 +52,7 @@ del connectedHosts[0]
 del connectedHosts[0]
 connectedHostNames = []
 for entry in connectedHosts:
+	print entry
 	host = re.split("\t", entry)
 	connectedHostNames.append(host[1].strip('\n'))
 
