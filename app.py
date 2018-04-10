@@ -43,8 +43,7 @@ except IndexError:
 global numConnectedHosts
 global connectedHosts
 etcHosts = open('/etc/hosts')
-print etcHosts
-numConnectedHosts = -2
+numConnectedHosts = -1
 connectedHosts = []
 for line in etcHosts:
 	numConnectedHosts = numConnectedHosts + 1
